@@ -106,20 +106,20 @@ def render_customer_view():
                 
                 col_cart_sub, col_cart_add, col_cart_del = st.sidebar.columns(3)
                 with col_cart_sub:
-                    if st.button("➖", key=f"sub_c_{item_id}", use_container_width=True):
+                    if st.button("➖", key=f"sub_c_{item_id}", width="stretch"):
                         st.session_state.cart[item_id] -= 1
                         if st.session_state.cart[item_id] <= 0:
                             del st.session_state.cart[item_id]
                         st.rerun()
                 with col_cart_add:
-                    if st.button("➕", key=f"add_c_{item_id}", use_container_width=True):
+                    if st.button("➕", key=f"add_c_{item_id}", width="stretch"):
                         if qty < item['stock_level']:
                             st.session_state.cart[item_id] += 1
                             st.rerun()
                         else:
                             st.sidebar.error("Stock limit reached!")
                 with col_cart_del:
-                    if st.button("❌", key=f"del_c_{item_id}", use_container_width=True):
+                    if st.button("❌", key=f"del_c_{item_id}", width="stretch"):
                         del st.session_state.cart[item_id]
                         st.rerun()
                         
@@ -150,7 +150,7 @@ def render_customer_view():
         st.sidebar.markdown("---")
         
         # Checkout button
-        if st.sidebar.button("🚀 Place Table Order", type="primary", use_container_width=True):
+        if st.sidebar.button("🚀 Place Table Order", type="primary", width="stretch"):
             # Write order to database
             conn = get_db_connection()
             cursor = conn.cursor()

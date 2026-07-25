@@ -35,17 +35,17 @@ def render_security_feed():
     col_s1, col_s2, col_s3 = st.columns(3)
     
     with col_s1:
-        if st.button("Simulate Cash Skimming (Void)", use_container_width=True):
+        if st.button("Simulate Cash Skimming (Void)", width="stretch"):
             simulate_void_anomaly()
             st.success("Simulated cash skimming event triggered!")
             st.rerun()
     with col_s2:
-        if st.button("Simulate Discount Abuse", use_container_width=True):
+        if st.button("Simulate Discount Abuse", width="stretch"):
             simulate_discount_anomaly()
             st.success("Simulated discount policy violation triggered!")
             st.rerun()
     with col_s3:
-        if st.button("Simulate Inventory Loss", use_container_width=True):
+        if st.button("Simulate Inventory Loss", width="stretch"):
             simulate_shrinkage_anomaly()
             st.success("Simulated physical inventory count mismatch!")
             st.rerun()
@@ -281,7 +281,7 @@ def render_ai_copilot():
     cols = st.columns(len(chips))
     for col, chip_text in zip(cols, chips):
         with col:
-            if st.button(chip_text, use_container_width=True):
+            if st.button(chip_text, width="stretch"):
                 # Add to chat
                 st.session_state.messages.append(("user", chip_text))
                 with st.spinner("AI is checking server audit files..."):

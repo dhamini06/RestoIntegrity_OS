@@ -112,7 +112,7 @@ def inject_custom_css():
         /* Hide default Streamlit decoration */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
-        header {visibility: hidden;}
+        header[data-testid="stHeader"] {visibility: hidden;}
         </style>
     """, unsafe_allow_html=True)
 

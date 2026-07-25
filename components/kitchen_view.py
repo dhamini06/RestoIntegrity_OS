@@ -92,12 +92,12 @@ def render_kitchen_view():
                 
                 col_btn1, col_btn2 = st.columns(2)
                 with col_btn1:
-                    if st.button(f"🔥 Start Cooking", key=f"cook_{o_id}", use_container_width=True):
+                    if st.button(f"🔥 Start Cooking", key=f"cook_{o_id}", width="stretch"):
                         update_order_status(o_id, 'preparing')
                         st.success(f"Order #{o_id} moved to Preparing!")
                         st.rerun()
                 with col_btn2:
-                    if st.button(f"❌ Cancel", key=f"cancel_pending_{o_id}", use_container_width=True):
+                    if st.button(f"❌ Cancel", key=f"cancel_pending_{o_id}", width="stretch"):
                         # Cancel order directly (doesn't trigger high anomaly since it wasn't cooked yet)
                         update_order_status(o_id, 'voided')
                         st.warning(f"Order #{o_id} voided.")
@@ -139,12 +139,12 @@ def render_kitchen_view():
                 
                 col_btn1, col_btn2 = st.columns(2)
                 with col_btn1:
-                    if st.button(f"✅ Ready / Serve", key=f"serve_{o_id}", use_container_width=True):
+                    if st.button(f"✅ Ready / Serve", key=f"serve_{o_id}", width="stretch"):
                         update_order_status(o_id, 'completed')
                         st.success(f"Order #{o_id} completed and served!")
                         st.rerun()
                 with col_btn2:
-                    if st.button(f"❌ Cancel / Void", key=f"cancel_preparing_{o_id}", use_container_width=True):
+                    if st.button(f"❌ Cancel / Void", key=f"cancel_preparing_{o_id}", width="stretch"):
                         # CRITICAL SECURITY ANOMALY TRIGGER
                         # Voiding a completed or preparing order creates a security alert!
                         alert_id = check_void_anomaly(
