@@ -6,9 +6,9 @@ def inject_custom_css():
     glassmorphic, dark-mode cybersecurity feel.
     """
     st.markdown("""
+        <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap');
         
-        <style>
         /* Base styles and fonts override */
         html, body, [data-testid="stAppViewContainer"] {
             font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
