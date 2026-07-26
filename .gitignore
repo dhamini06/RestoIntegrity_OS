@@ -6,4 +6,6 @@ venv/
 ENV/
 .env
 .env.*
-.streamlit/config.toml
+*.db
+*.db-journal
+.streamlit/secrets.toml

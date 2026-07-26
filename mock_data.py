@@ -1,36 +1,38 @@
 import sqlite3
 import json
+import hashlib
 from datetime import datetime, timedelta
-from database import get_db_connection, init_db
+from database import get_db_connection, init_db, migrate_db
+
+def _hash(pw):
+    return hashlib.sha256(pw.encode()).hexdigest()
 
 def seed_db():
     init_db()
+    migrate_db()
     conn = get_db_connection()
     cursor = conn.cursor()
-    
-    # Check if we already have data
+
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] > 0:
-        print("Database already has data. Skipping seed.")
         conn.close()
         return
 
-    print("Seeding database with rich mock data...")
-    
-    # 1. Seed Users
+    now_str = datetime.now().isoformat()
+
     users_data = [
-        ('admin', 'admin123', 'admin', 'Dhamini Admin'),
-        ('alice', 'alice123', 'staff', 'Alice Server'),
-        ('bob', 'bob123', 'staff', 'Bob Server'),
-        ('chef_ramsay', 'chef123', 'kitchen', 'Chef Ramsay'),
-        ('guest', 'guest123', 'customer', 'Walk-in Guest')
+        ('admin', _hash('admin123'), 'admin', 'Dhamini Admin'),
+        ('alice', _hash('alice123'), 'staff', 'Alice Server'),
+        ('bob', _hash('bob123'), 'staff', 'Bob Server'),
+        ('charlie', _hash('charlie123'), 'staff', 'Charlie Server'),
+        ('chef_ramsay', _hash('chef123'), 'kitchen', 'Chef Ramsay'),
+        ('guest', _hash('guest123'), 'customer', 'Walk-in Guest')
     ]
     cursor.executemany(
         "INSERT INTO users (username, password_hash, role, full_name) VALUES (?, ?, ?, ?)",
         users_data
     )
-    
-    # 2. Seed Menu Items
+
     menu_items_data = [
         ('Truffle Fries', 'Crispy russet fries tossed in truffle oil and parmesan cheese.', 12.0, 'Starter', 1, 50),
         ('Spicy Miso Ramen', 'Rich pork broth with miso paste, wavy noodles, and chashu pork.', 18.0, 'Main', 1, 40),
@@ -43,9 +45,7 @@ def seed_db():
         "INSERT INTO menu_items (name, description, price, category, is_available, stock_level) VALUES (?, ?, ?, ?, ?, ?)",
         menu_items_data
     )
-    
-    # 3. Seed Inventory
-    now_str = datetime.now().isoformat()
+
     inventory_data = [
         ('Potatoes', 25.0, 5.0, 'kg', now_str),
         ('Ramen Noodles', 15.0, 3.0, 'kg', now_str),
@@ -58,138 +58,134 @@ def seed_db():
         "INSERT INTO inventory (item_name, current_quantity, min_threshold, unit, last_updated) VALUES (?, ?, ?, ?, ?)",
         inventory_data
     )
-    
-    # 4. Seed Historical Orders (Last 48 hours for analytics)
-    # We will generate orders at random intervals
-    base_time = datetime.now() - timedelta(days=2)
-    
-    orders = []
-    # Create ~15 realistic orders
+
+    base_time = datetime(2026, 7, 23, 12, 0, 0)
+
     order_scenarios = [
-        # time_delta, table, status, items (item_id, qty, price), discount, staff
-        (timedelta(hours=2), "Table 4", "completed", [(1, 2, 12.0), (5, 2, 6.0)], 0.0, "alice"),
-        (timedelta(hours=4), "Table 1", "completed", [(2, 1, 18.0), (6, 1, 8.0)], 0.0, "bob"),
-        (timedelta(hours=6), "Table 3", "completed", [(3, 2, 45.0), (6, 2, 8.0), (4, 1, 10.0)], 0.0, "alice"),
-        (timedelta(hours=8), "Table 2", "completed", [(1, 1, 12.0), (4, 1, 10.0)], 0.0, "bob"),
-        # Suspicious void order
-        (timedelta(hours=10), "Table 5", "voided", [(3, 1, 45.0), (6, 2, 8.0)], 0.0, "bob"), 
-        (timedelta(hours=14), "Table 1", "completed", [(2, 2, 18.0), (5, 1, 6.0)], 0.0, "alice"),
-        # Suspicious discount order
-        (timedelta(hours=18), "Table 3", "completed", [(3, 2, 45.0)], 45.0, "alice"), # 50% discount
-        (timedelta(hours=22), "Table 4", "completed", [(1, 1, 12.0), (2, 1, 18.0), (5, 2, 6.0)], 0.0, "bob"),
-        (timedelta(hours=26), "Table 2", "completed", [(4, 2, 10.0), (5, 2, 6.0)], 0.0, "alice"),
-        (timedelta(hours=30), "Table 5", "completed", [(3, 1, 45.0), (6, 1, 8.0)], 0.0, "bob"),
-        # Another void order
-        (timedelta(hours=32), "Table 1", "voided", [(1, 2, 12.0), (5, 1, 6.0)], 0.0, "bob"),
-        (timedelta(hours=36), "Table 3", "completed", [(2, 2, 18.0), (4, 2, 10.0)], 0.0, "alice"),
-        (timedelta(hours=40), "Table 4", "completed", [(3, 1, 45.0), (6, 3, 8.0)], 0.0, "alice"),
-        (timedelta(hours=44), "Table 2", "pending", [(2, 1, 18.0), (5, 1, 6.0)], 0.0, "bob"),
-        (timedelta(hours=46), "Table 5", "preparing", [(3, 2, 45.0), (4, 2, 10.0)], 0.0, "alice"),
+        (timedelta(hours=2), "Table 4", "completed", [(1, 2, 12.0), (5, 2, 6.0)], 0.0, None, "alice", "Card", 0.18),
+        (timedelta(hours=4), "Table 1", "completed", [(2, 1, 18.0), (6, 1, 8.0)], 0.0, None, "bob", "Cash", 0.20),
+        (timedelta(hours=6), "Table 3", "completed", [(3, 2, 45.0), (6, 2, 8.0), (4, 1, 10.0)], 0.0, None, "alice", "Card", 0.22),
+        (timedelta(hours=8), "Table 2", "completed", [(1, 1, 12.0), (4, 1, 10.0)], 0.0, None, "bob", "Mobile Pay", 0.15),
+        (timedelta(hours=10), "Table 5", "voided", [(3, 1, 45.0), (6, 2, 8.0)], 0.0, None, "bob", "Cash", 0.0),
+        (timedelta(hours=14), "Table 1", "completed", [(2, 2, 18.0), (5, 1, 6.0)], 0.0, None, "alice", "Card", 0.25),
+        (timedelta(hours=18), "Table 3", "completed", [(3, 2, 45.0)], 45.0, "alice", "alice", "Cash", 0.20),
+        (timedelta(hours=22), "Table 4", "completed", [(1, 1, 12.0), (2, 1, 18.0), (5, 2, 6.0)], 0.0, None, "bob", "Card", 0.18),
+        (timedelta(hours=26), "Table 2", "completed", [(4, 2, 10.0), (5, 2, 6.0)], 0.0, None, "charlie", "Mobile Pay", 0.20),
+        (timedelta(hours=30), "Table 5", "completed", [(3, 1, 45.0), (6, 1, 8.0)], 0.0, None, "bob", "Card", 0.22),
+        (timedelta(hours=32), "Table 1", "voided", [(1, 2, 12.0), (5, 1, 6.0)], 0.0, None, "bob", "Cash", 0.0),
+        (timedelta(hours=36), "Table 3", "completed", [(2, 2, 18.0), (4, 2, 10.0)], 0.0, None, "alice", "Card", 0.20),
+        (timedelta(hours=40), "Table 4", "completed", [(3, 1, 45.0), (6, 3, 8.0)], 0.0, None, "alice", "Cash", 0.25),
+        (timedelta(hours=44), "Table 2", "pending", [(2, 1, 18.0), (5, 1, 6.0)], 0.0, None, "bob", None, 0.0),
+        (timedelta(hours=46), "Table 5", "preparing", [(3, 2, 45.0), (4, 2, 10.0)], 0.0, None, "alice", None, 0.0),
     ]
-    
-    for time_delta, table, status, items, discount, staff in order_scenarios:
+
+    for time_delta, table, status, items, discount, disc_by, served_by, pay_method, tip_pct in order_scenarios:
         o_time = (base_time + time_delta).isoformat()
         subtotal = sum(qty * price for _, qty, price in items)
-        total = subtotal - discount
-        
-        cursor.execute(
-            "INSERT INTO orders (table_number, status, subtotal, discount, total, discount_applied_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (table, status, subtotal, discount, total, staff if discount > 0 else None, o_time)
-        )
+        tax = round(subtotal * 0.0875, 2)
+        tip = round(subtotal * tip_pct, 2) if status == 'completed' else 0.0
+        total = round(subtotal - discount + tax + tip, 2)
+
+        prepping_at = None
+        completed_at = None
+        if status in ('preparing', 'completed', 'voided'):
+            prepping_at = (base_time + time_delta + timedelta(minutes=3)).isoformat()
+        if status == 'completed':
+            completed_at = (base_time + time_delta + timedelta(minutes=22)).isoformat()
+
+        cursor.execute("""
+            INSERT INTO orders (table_number, status, subtotal, discount, total, tax, tip,
+                payment_method, discount_applied_by, served_by, created_at, prepping_at, completed_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (table, status, subtotal, discount, total, tax, tip,
+              pay_method, disc_by, served_by, o_time, prepping_at, completed_at))
         order_id = cursor.lastrowid
-        
+
         for item_id, qty, price in items:
             cursor.execute(
                 "INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price) VALUES (?, ?, ?, ?)",
                 (order_id, item_id, qty, price)
             )
-            
-    # 5. Seed Security Alerts
+
     alerts_data = [
         (
-            "void_anomaly",
-            "high",
+            "void_anomaly", "high",
             json.dumps({
-                "table_number": "Table 5",
-                "staff_username": "bob",
+                "table_number": "Table 5", "staff_username": "bob",
                 "order_total": 61.0,
                 "reason": "Order was marked void after being in preparing/cooking state for over 30 minutes. Order contained high-value item: Wagyu Ribeye.",
-                "timestamp": (datetime.now() - timedelta(hours=38)).isoformat()
+                "timestamp": (datetime(2026, 7, 23, 23, 0) - timedelta(hours=38)).isoformat()
             }),
             "bob",
             json.dumps({
-                "threat_classification": "Internal Cash Skimming (Suspicious Void)",
+                "threat_classification": "High Cancellation Rate",
                 "risk_score": 85,
-                "incident_summary": "Order ID 5 (Table 5) was marked as voided by Bob after the kitchen started preparation. Since the kitchen had processed the order, food was likely served. Voiding the order afterwards is a common pattern for pocketing cash payments.",
+                "incident_summary": "Order ID 5 (Table 5) was voided by Bob after the kitchen started preparation. The order had been in-progress for 30+ minutes, suggesting the meal was likely served before cancellation. This pattern affects revenue tracking and kitchen workflow.",
                 "recommended_actions": [
-                    "Perform a spot check of Table 5 CCTV footage around the void timestamp.",
-                    "Verify with the kitchen if the Wagyu Ribeye ticket was completed and served.",
-                    "Review Bob's cash drawer balance at the end of the shift."
+                    "Review the order lifecycle to understand why cancellation happened so late.",
+                    "Confirm with the kitchen whether the Wagyu Ribeye ticket was completed.",
+                    "Discuss void procedures with Bob to ensure cancellations happen before prep."
                 ]
             }),
             "active",
-            (datetime.now() - timedelta(hours=38)).isoformat()
+            (datetime(2026, 7, 23, 12, 0) + timedelta(hours=10)).isoformat()
         ),
         (
-            "discount_anomaly",
-            "medium",
+            "discount_anomaly", "medium",
             json.dumps({
-                "table_number": "Table 3",
-                "staff_username": "alice",
-                "discount_amount": 45.0,
-                "discount_percentage": 50.0,
+                "table_number": "Table 3", "staff_username": "alice",
+                "discount_amount": 45.0, "discount_percentage": 50.0,
                 "order_total": 90.0,
                 "reason": "An exceptionally high discount (50%) was manually applied by Alice without admin auth log verification.",
-                "timestamp": (datetime.now() - timedelta(hours=30)).isoformat()
+                "timestamp": (datetime(2026, 7, 23, 12, 0) + timedelta(hours=18)).isoformat()
             }),
             "alice",
             json.dumps({
-                "threat_classification": "Unauthorized Employee Discount Abuse",
+                "threat_classification": "Unusual Discount Pattern",
                 "risk_score": 65,
-                "incident_summary": "A manual discount of 50% ($45.00) was applied by Alice on Table 3. There is no supervisor override authorization recorded for this transaction, which exceeds the standard staff discount policy limit of 15%.",
+                "incident_summary": "A manual discount of 50% ($45.00) was applied by Alice on Table 3. No supervisor override was recorded. This exceeds the standard staff discount threshold of 15%.",
                 "recommended_actions": [
-                    "Verify if Table 3 guests were authorized for VIP discounts.",
-                    "Audit Alice's discount frequency to check if this is a recurring behavior.",
-                    "Implement a hard restriction forcing admin PIN entry for discounts > 20%."
+                    "Verify if Table 3 was a VIP or authorized comp.",
+                    "Review Alice's discount frequency for recurring patterns.",
+                    "Consider requiring admin PIN entry for discounts over 20%."
                 ]
             }),
             "investigated",
-            (datetime.now() - timedelta(hours=30)).isoformat()
+            (datetime(2026, 7, 23, 12, 0) + timedelta(hours=18)).isoformat()
         ),
         (
-            "shrinkage_anomaly",
-            "medium",
+            "shrinkage_anomaly", "medium",
             json.dumps({
                 "ingredient_name": "Wagyu Ribeye Cut",
                 "calculated_usage": "2.5 kg (based on 5 steaks sold)",
                 "actual_usage": "4.5 kg (based on physical count)",
                 "discrepancy": "2.0 kg missing (approx. 4 ribeye cuts)",
-                "timestamp": (datetime.now() - timedelta(hours=12)).isoformat()
+                "timestamp": (datetime(2026, 7, 23, 12, 0) + timedelta(hours=36)).isoformat()
             }),
             None,
             json.dumps({
-                "threat_classification": "Inventory Shrinkage (High Discrepancy)",
+                "threat_classification": "Stock Depletion Warning",
                 "risk_score": 70,
-                "incident_summary": "Reconciliation check detected a 2.0 kg (approx. 4 servings) discrepancy in Wagyu Ribeye Cut inventory. Sold quantity accounts for 2.5 kg, but 4.5 kg was depleted from stock, suggesting unrecorded waste or kitchen theft.",
+                "incident_summary": "Reconciliation check detected a 2.0 kg (approx. 4 servings) discrepancy in Wagyu Ribeye Cut inventory. Sales account for 2.5 kg but 4.5 kg was depleted. This suggests unrecorded waste, portion overages, or spoilage.",
                 "recommended_actions": [
-                    "Ask the chef if any Wagyu steaks were spoiled or discarded as waste without logging.",
-                    "Verify portion controls in the kitchen to ensure steaks do not exceed 250g specification.",
-                    "Audit freezer access logs if lock sensors are active."
+                    "Check with the chef if any Wagyu steaks were discarded or spoiled without logging.",
+                    "Audit portion controls to ensure steaks match the 250g specification.",
+                    "Run daily spot inventory counts on high-value items."
                 ]
             }),
             "active",
-            (datetime.now() - timedelta(hours=12)).isoformat()
+            (datetime(2026, 7, 23, 12, 0) + timedelta(hours=36)).isoformat()
         )
     ]
-    
+
     cursor.executemany(
         "INSERT INTO security_alerts (alert_type, severity, details, triggered_by, ai_analysis, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
         alerts_data
     )
-    
+
     conn.commit()
     conn.close()
-    print("Database seeded successfully.")
 
 if __name__ == "__main__":
     seed_db()
+    print("Database seeded successfully.")

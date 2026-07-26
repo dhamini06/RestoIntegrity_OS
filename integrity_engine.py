@@ -6,7 +6,7 @@ from gemini_service import investigate_alert_with_gemini
 
 def log_security_alert(alert_type, severity, details_dict, triggered_by=None):
     """
-    Saves a security alert to the DB and triggers a background Gemini investigation.
+    Saves an operational alert to the DB and triggers a background Gemini investigation.
     """
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -32,7 +32,7 @@ def log_security_alert(alert_type, severity, details_dict, triggered_by=None):
 
 def check_void_anomaly(order_id, staff_username, current_status):
     """
-    Checks if voiding a completed or preparing order is a potential cash skimming attempt.
+    Checks if voiding a completed or preparing order warrants an alert.
     """
     if current_status not in ['preparing', 'completed']:
         return None
@@ -51,7 +51,7 @@ def check_void_anomaly(order_id, staff_username, current_status):
         "table_number": order['table_number'],
         "staff_username": staff_username,
         "order_total": order['total'],
-        "reason": f"Order was marked void after being in '{current_status}' state. Prepared food was likely served, suggesting pocketed cash.",
+        "reason": f"Order was marked void after being in '{current_status}' state. Prepared food may have been served before cancellation.",
         "timestamp": datetime.now().isoformat()
     }
     
@@ -65,7 +65,7 @@ def check_void_anomaly(order_id, staff_username, current_status):
 
 def check_discount_anomaly(order_id, staff_username, discount_amount):
     """
-    Checks if the manually applied discount is suspicious (> 30% of subtotal).
+    Checks if the manually applied discount exceeds the threshold.
     """
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -86,7 +86,7 @@ def check_discount_anomaly(order_id, staff_username, discount_amount):
             "staff_username": staff_username,
             "discount_amount": discount_amount,
             "discount_percentage": round(discount_pct, 1),
-            "reason": f"High manual discount ({round(discount_pct, 1)}%) applied by staff without admin supervisor log.",
+            "reason": f"High manual discount ({round(discount_pct, 1)}%) applied by staff without supervisor approval.",
             "timestamp": datetime.now().isoformat()
         }
         
@@ -101,8 +101,7 @@ def check_discount_anomaly(order_id, staff_username, discount_amount):
 
 def check_shrinkage_anomaly(ingredient_name, physical_qty, staff_username=None):
     """
-    Reconciles theoretical inventory levels (previous_qty - calculated sales consumption)
-    with actual physical count reports.
+    Reconciles theoretical inventory levels with actual physical count reports.
     """
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -125,7 +124,7 @@ def check_shrinkage_anomaly(ingredient_name, physical_qty, staff_username=None):
             "physical_quantity": physical_qty,
             "discrepancy": round(discrepancy, 2),
             "unit": inv['unit'],
-            "reason": f"Physical count reported {round(discrepancy, 2)} {inv['unit']} lower than expected inventory stock level.",
+            "reason": f"Physical count reported {round(discrepancy, 2)} {inv['unit']} lower than expected inventory level.",
             "timestamp": datetime.now().isoformat()
         }
         

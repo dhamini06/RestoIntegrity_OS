@@ -3,300 +3,566 @@ import sqlite3
 import json
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime, timedelta
 from database import get_db_connection
 from integrity_engine import check_void_anomaly, check_discount_anomaly, check_shrinkage_anomaly
 from gemini_service import get_demand_forecast, ask_manager_assistant
 
-def render_manager_view():
-    st.markdown("<h2 class='glow-text-cyan'>🛡️ Operational Integrity Command Center</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color:#a0aec0;'>Loss prevention analytics, real-time transaction guardrails, and Gemini AI forensics.</p>", unsafe_allow_html=True)
+def render_manager_view(user):
+    st.markdown("<h2 class='glow-indigo'>📊 Operations Command Center</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#64748b;'>Business intelligence, inventory tracking, and AI-powered insights.</p>", unsafe_allow_html=True)
 
-    tab_sec, tab_analytics, tab_copilot = st.tabs([
-        "🚨 Security Feed (SOC Logs)", 
-        "📈 Operations & Inventory Metrics", 
-        "🤖 AI Loss Prevention Co-Pilot"
+    tab_sec, tab_analytics, tab_tips, tab_copilot = st.tabs([
+        "📊 Operations Hub",
+        "📈 Revenue Analytics",
+        "💰 Tips & Staff",
+        "🤖 AI Business Advisor"
     ])
 
     with tab_sec:
-        render_security_feed()
-
+        render_security_feed(user)
     with tab_analytics:
         render_analytics()
-
+    with tab_tips:
+        render_tips_dashboard()
     with tab_copilot:
         render_ai_copilot()
 
-def render_security_feed():
-    st.markdown("### 🚨 Live Operational Alert Logs")
-    
-    # Simulation buttons
-    st.markdown("##### ⚡ Quick Anomaly Simulations (For Judges)")
-    col_s1, col_s2, col_s3 = st.columns(3)
-    
-    with col_s1:
-        if st.button("Simulate Cash Skimming (Void)", width="stretch"):
-            simulate_void_anomaly()
-            st.success("Simulated cash skimming event triggered!")
-            st.rerun()
-    with col_s2:
-        if st.button("Simulate Discount Abuse", width="stretch"):
-            simulate_discount_anomaly()
-            st.success("Simulated discount policy violation triggered!")
-            st.rerun()
-    with col_s3:
-        if st.button("Simulate Inventory Loss", width="stretch"):
-            simulate_shrinkage_anomaly()
-            st.success("Simulated physical inventory count mismatch!")
-            st.rerun()
+
+def render_security_feed(user):
+    st.markdown("### 📊 Live Operations Feed")
+
+    st.markdown("##### ⚡ What-If Scenario Simulator")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        with st.popover("🔄 High Cancellation Day", use_container_width=True):
+            st.write("Simulates a day with multiple order cancellations — see how it impacts revenue.")
+            if st.button("Run Simulation", key="confirm_void", use_container_width=True):
+                simulate_void_anomaly()
+                st.success("High cancellation scenario created!")
+                st.rerun()
+    with c2:
+        with st.popover("🏷️ Discount Spike", use_container_width=True):
+            st.write("Simulates unusual discount patterns — track discount spend impact.")
+            if st.button("Run Simulation", key="confirm_disc", use_container_width=True):
+                simulate_discount_anomaly()
+                st.success("Discount spike scenario created!")
+                st.rerun()
+    with c3:
+        with st.popover("📦 Stock Depletion Alert", use_container_width=True):
+            st.write("Simulates a low stock scenario — test your reorder response.")
+            if st.button("Run Simulation", key="confirm_shrink", use_container_width=True):
+                simulate_shrinkage_anomaly()
+                st.success("Stock depletion alert triggered!")
+                st.rerun()
 
     st.markdown("---")
-    
-    # Fetch alerts
+
+    check_low_stock_alerts()
+
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, alert_type, severity, details, triggered_by, ai_analysis, status, created_at FROM security_alerts ORDER BY id DESC")
+    cursor.execute("SELECT * FROM security_alerts ORDER BY id DESC")
     alerts = [dict(row) for row in cursor.fetchall()]
     conn.close()
-    
+
     if not alerts:
-        st.info("No security alerts logged. System reports 100% operational integrity.")
+        st.markdown("""
+        <div class="glass-card" style="text-align:center; padding:30px;">
+            <div style="font-size:2.5rem;">✅</div>
+            <p style="color:#10b981; font-weight:600;">All clear! No operational alerts.</p>
+        </div>
+        """, unsafe_allow_html=True)
         return
-        
+
     for alert in alerts:
         a_id = alert['id']
-        a_type = alert['alert_type']
         sev = alert['severity']
-        triggered_by = alert['triggered_by'] if alert['triggered_by'] else "system"
-        time_str = alert['created_at']
+        a_type = alert['alert_type']
+        triggered_by = alert['triggered_by'] or "system"
         details = json.loads(alert['details'])
-        
-        # Display styling matching severity
-        card_class = "alert-card-high" if sev == "high" else "alert-card-medium"
-        badge_class = "badge-critical" if sev == "high" else "badge-medium"
-        
-        # Format label names
+        status = alert['status']
+
+        card_class = {"high": "alert-card-high", "medium": "alert-card-medium"}.get(sev, "alert-card-low")
+        badge_class = {"high": "badge-critical", "medium": "badge-medium"}.get(sev, "badge-low")
         label_map = {
-            "void_anomaly": "Post-Preparation Transaction Void",
-            "discount_anomaly": "High-Value Manual Discount Policy Spike",
-            "shrinkage_anomaly": "Real-time Inventory Shrinkage Discrepancy"
+            "void_anomaly": "High Cancellation Rate",
+            "discount_anomaly": "Unusual Discount Pattern",
+            "shrinkage_anomaly": "Stock Depletion Warning"
         }
         display_name = label_map.get(a_type, a_type)
-        
-        # Card header HTML
+
+        status_colors = {"active": "badge-critical", "investigated": "badge-medium", "resolved": "badge-low"}
+        status_badge = status_colors.get(status, "badge-low")
+
         st.markdown(f"""
         <div class="{card_class}">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <strong>{display_name} (Alert #{a_id})</strong>
-                <span class="badge {badge_class}">{sev} severity</span>
+                <strong>{display_name} (#{a_id})</strong>
+                <div>
+                    <span class="badge {status_badge}">{status.upper()}</span>
+                    <span class="badge {badge_class}" style="margin-left:4px;">{sev}</span>
+                </div>
             </div>
-            <div style="font-size:0.85rem; margin-top:8px; color:#cbd5e0;">
-                Triggered by: <code>{triggered_by}</code> | Detected: {time_str}
+            <div style="font-size:0.82rem; margin-top:8px; color:#64748b;">
+                By <b>{triggered_by}</b> — {alert['created_at'][:16]}
             </div>
-            <p style="margin: 8px 0 0 0; font-size:0.9rem; font-style:italic; color:#e2e8f0;">
-                "{details.get('reason', 'Stock level check discrepancy')}"
+            <p style="margin: 8px 0 0; font-size:0.88rem; color:#475569; font-style:italic;">
+                "{details.get('reason', 'System flagged discrepancy')}"
             </p>
         </div>
         """, unsafe_allow_html=True)
-        
-        # Incident forensic analysis drawer
-        with st.expander(f"🔍 Forensic Details & AI Investigation (Alert #{a_id})"):
+
+        with st.expander(f"📋 Details & Insight — Alert #{a_id}"):
             col_det, col_ai = st.columns(2)
-            
             with col_det:
-                st.markdown("##### 📊 Event Log Metadata")
+                st.markdown("**Alert Details**")
                 st.json(details)
-                
-                # Action buttons
                 st.markdown("---")
-                col_act1, col_act2 = st.columns(2)
-                with col_act1:
-                    if st.button("Mark Resolved", key=f"resolve_{a_id}"):
-                        update_alert_status(a_id, "resolved")
-                        st.success("Alert marked resolved.")
-                        st.rerun()
-                with col_act2:
-                    if st.button("Flag for CCTV Audit", key=f"audit_{a_id}"):
-                        st.info(f"CCTV request queued for timestamp {time_str}")
-                        st.toast("CCTV request logged!")
-                        
+                c1, c2 = st.columns(2)
+                with c1:
+                    if status == 'active':
+                        if st.button("🔍 Investigate", key=f"inv_{a_id}", use_container_width=True):
+                            update_alert_status(a_id, "investigated")
+                            st.rerun()
+                with c2:
+                    if status in ('active', 'investigated'):
+                        if st.button("✅ Resolve", key=f"res_{a_id}", use_container_width=True):
+                            update_alert_status(a_id, "resolved")
+                            st.rerun()
+
             with col_ai:
-                st.markdown("##### 🧠 Gemini AI Forensic Report")
-                ai_analysis_raw = alert['ai_analysis']
-                if ai_analysis_raw:
+                st.markdown("**🧠 AI Business Insight**")
+                ai_raw = alert['ai_analysis']
+                if ai_raw:
                     try:
-                        ai_data = json.loads(ai_analysis_raw)
-                        st.markdown(f"**Classification:** `{ai_data.get('threat_classification', 'N/A')}`")
-                        st.markdown(f"**Risk Level Score:** `{ai_data.get('risk_score', 'N/A')}/100`")
-                        st.markdown(f"**Summary Analysis:**\n{ai_data.get('incident_summary', 'N/A')}")
-                        st.markdown("**Actionable Audit Plan:**")
-                        for idx, step in enumerate(ai_data.get('recommended_actions', [])):
-                            st.markdown(f"{idx+1}. {step}")
+                        ai_data = json.loads(ai_raw)
+                        st.markdown(f"**Category:** `{ai_data.get('threat_classification', 'N/A')}`")
+                        score = ai_data.get('risk_score', 0)
+                        score_color = "#ef4444" if score >= 70 else "#f59e0b" if score >= 40 else "#10b981"
+                        st.markdown(f"**Priority Score:** <span style='color:{score_color}; font-weight:700;'>{score}/100</span>", unsafe_allow_html=True)
+                        st.markdown(f"**Analysis:** {ai_data.get('incident_summary', 'N/A')}")
+                        st.markdown("**Recommended Actions:**")
+                        for i, step in enumerate(ai_data.get('recommended_actions', [])):
+                            st.markdown(f"{i+1}. {step}")
                     except Exception:
-                        st.write(ai_analysis_raw)
+                        st.write(ai_raw)
                 else:
-                    st.warning("No Gemini AI analysis available. Connect your GEMINI_API_KEY to enrich logs.")
+                    st.info("No AI analysis yet. Add your Gemini API key in settings to enable.")
 
 
 def render_analytics():
-    st.markdown("### 📈 Sales & Inventory Integrity Status")
-    
-    # Calculate KPIs
+    st.markdown("### 📈 Analytics Dashboard")
+
+    c1, c2 = st.columns(2)
+    with c1:
+        date_from = st.date_input("From", value=datetime.now().date() - timedelta(days=7), key="date_from")
+    with c2:
+        date_to = st.date_input("To", value=datetime.now().date(), key="date_to")
+
+    date_from_str = datetime.combine(date_from, datetime.min.time()).isoformat()
+    date_to_str = datetime.combine(date_to, datetime.max.time()).isoformat()
+
     conn = get_db_connection()
     cursor = conn.cursor()
-    
-    cursor.execute("SELECT SUM(total) FROM orders WHERE status = 'completed'")
-    total_sales = cursor.fetchone()[0] or 0.0
-    
-    cursor.execute("SELECT COUNT(*) FROM orders")
-    total_orders = cursor.fetchone()[0] or 0
-    
+
+    cursor.execute("SELECT COALESCE(SUM(total), 0) FROM orders WHERE status = 'completed' AND created_at BETWEEN ? AND ?",
+                   (date_from_str, date_to_str))
+    total_sales = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM orders WHERE created_at BETWEEN ? AND ?",
+                   (date_from_str, date_to_str))
+    total_orders = cursor.fetchone()[0]
+
     cursor.execute("SELECT COUNT(*) FROM security_alerts WHERE status = 'active'")
-    active_alerts = cursor.fetchone()[0] or 0
-    
-    st.markdown(f"""
-    <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:20px;">
-        <div class="glass-card" style="flex:1; text-align:center;">
-            <div style="font-size:0.9rem; color:#cbd5e0;">Total Verified Revenue</div>
-            <div class="metric-value">${total_sales:.2f}</div>
-        </div>
-        <div class="glass-card" style="flex:1; text-align:center;">
-            <div style="font-size:0.9rem; color:#cbd5e0;">Order Count (All Channels)</div>
-            <div class="metric-value">{total_orders}</div>
-        </div>
-        <div class="glass-card" style="flex:1; text-align:center;">
-            <div style="font-size:0.9rem; color:#cbd5e0;">Active Integrity Warnings</div>
-            <div class="metric-value" style="background: linear-gradient(90deg, #ff4d4d, #ff9f43); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{active_alerts}</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Plotly Sales Graph
-    cursor.execute("SELECT created_at, total FROM orders WHERE status = 'completed'")
+    active_alerts = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COALESCE(SUM(total), 0) FROM orders WHERE status = 'voided' AND created_at BETWEEN ? AND ?",
+                   (date_from_str, date_to_str))
+    voided_value = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COALESCE(SUM(discount), 0) FROM orders WHERE discount > 0 AND created_at BETWEEN ? AND ?",
+                   (date_from_str, date_to_str))
+    discount_leakage = cursor.fetchone()[0]
+
+    conn.close()
+
+    from components.ui_helpers import show_metric_card
+    k1, k2, k3 = st.columns(3)
+    with k1:
+        show_metric_card("Verified Revenue", f"${total_sales:,.2f}", "💵", "indigo")
+    with k2:
+        show_metric_card("Total Orders", str(total_orders), "📦", "emerald")
+    with k3:
+        show_metric_card("Active Alerts", str(active_alerts), "📋", "amber")
+
+    l1, l2 = st.columns(2)
+    with l1:
+        show_metric_card("Cancelled Revenue", f"${voided_value:,.2f}", "🔄", "amber")
+    with l2:
+        show_metric_card("Discount Spend", f"${discount_leakage:,.2f}", "🏷️", "amber")
+
+    # Sales chart
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT created_at, total FROM orders WHERE status = 'completed' AND created_at BETWEEN ? AND ?",
+                   (date_from_str, date_to_str))
     sales_rows = cursor.fetchall()
-    
+
     if sales_rows:
-        df_sales = pd.DataFrame([dict(r) for r in sales_rows])
-        df_sales['created_at'] = pd.to_datetime(df_sales['created_at'])
-        df_sales['Hour'] = df_sales['created_at'].dt.strftime('%H:00')
-        df_grouped = df_sales.groupby('Hour')['total'].sum().reset_index()
-        
-        fig = px.bar(
-            df_grouped, x='Hour', y='total', 
-            title='Verified Sales Breakdown by Time of Day',
-            labels={'total':'Revenue ($)', 'Hour':'Time Block'},
-            template='plotly_dark'
-        )
-        fig.update_traces(marker_color='#00f2fe')
-        fig.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
-            xaxis_showgrid=False,
-            yaxis_showgrid=True,
-            yaxis_gridcolor='rgba(255,255,255,0.05)'
-        )
+        df = pd.DataFrame([dict(r) for r in sales_rows])
+        df['created_at'] = pd.to_datetime(df['created_at'])
+        df['Hour'] = df['created_at'].dt.strftime('%H:00')
+        grouped = df.groupby('Hour')['total'].sum().reset_index()
+        fig = px.bar(grouped, x='Hour', y='total', title='Revenue by Hour',
+                     labels={'total': 'Revenue ($)', 'Hour': 'Time'},
+                     template='plotly_white')
+        fig.update_traces(marker_color='#6366f1', marker_line_color='#4f46e5', marker_line_width=1)
+        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                          font_family='Poppins')
         st.plotly_chart(fig, use_container_width=True)
-        
-    # Inventory Table
-    st.markdown("### 🥦 Ingredient Inventory Reconciliation")
+
+    # Void rate by employee
+    cursor.execute("""
+        SELECT served_by as staff, COUNT(*) as total_orders,
+               SUM(CASE WHEN status = 'voided' THEN 1 ELSE 0 END) as voided
+        FROM orders WHERE served_by IS NOT NULL
+        GROUP BY served_by
+    """)
+    staff_data = [dict(r) for r in cursor.fetchall()]
+    if staff_data:
+        df_staff = pd.DataFrame(staff_data)
+        df_staff['void_rate'] = (df_staff['voided'] / df_staff['total_orders'] * 100).round(1)
+        fig2 = px.bar(df_staff, x='staff', y='void_rate', title='Cancellation Rate by Staff (%)',
+                      labels={'void_rate': 'Cancel %', 'staff': 'Employee'},
+                      template='plotly_white', color='void_rate',
+                      color_continuous_scale=['#10b981', '#f59e0b', '#ef4444'])
+        fig2.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                           font_family='Poppins')
+        st.plotly_chart(fig2, use_container_width=True)
+
+    # Discount leakage scatter
+    cursor.execute("SELECT id, discount_applied_by, discount, subtotal, created_at FROM orders WHERE discount > 0")
+    disc_rows = [dict(r) for r in cursor.fetchall()]
+    if disc_rows:
+        df_disc = pd.DataFrame(disc_rows)
+        df_disc['created_at'] = pd.to_datetime(df_disc['created_at'])
+        df_disc['pct'] = (df_disc['discount'] / df_disc['subtotal'] * 100).round(1)
+        fig3 = px.scatter(df_disc, x='created_at', y='pct', size='discount',
+                          color='discount_applied_by', title='Discount Patterns Over Time',
+                          labels={'pct': 'Discount %', 'created_at': 'Date', 'discount_applied_by': 'Staff'},
+                          template='plotly_white')
+        fig3.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                           font_family='Poppins')
+        st.plotly_chart(fig3, use_container_width=True)
+
+    # ── Item Performance ──────────────────────────────────────────────
+    st.markdown("### 🍽️ Item Performance")
+
+    cursor.execute("""
+        SELECT mi.name, mi.category,
+               SUM(oi.quantity) as units_sold,
+               SUM(oi.quantity * oi.unit_price) as item_revenue
+        FROM order_items oi
+        JOIN orders o ON oi.order_id = o.id
+        JOIN menu_items mi ON oi.menu_item_id = mi.id
+        WHERE o.status = 'completed' AND o.created_at BETWEEN ? AND ?
+        GROUP BY mi.name
+        ORDER BY units_sold DESC
+    """, (date_from_str, date_to_str))
+    item_rows = [dict(r) for r in cursor.fetchall()]
+
+    if item_rows:
+        df_items = pd.DataFrame(item_rows)
+
+        ip1, ip2 = st.columns([3, 2])
+
+        with ip1:
+            fig_items = px.bar(df_items, x='name', y='units_sold', color='category',
+                               title='Units Sold by Item',
+                               labels={'units_sold': 'Units Sold', 'name': 'Item'},
+                               template='plotly_white',
+                               color_discrete_sequence=['#6366f1', '#ec4899', '#10b981', '#f59e0b'])
+            fig_items.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                                    font_family='Poppins', xaxis_tickangle=-30)
+            st.plotly_chart(fig_items, use_container_width=True)
+
+        with ip2:
+            fig_rev = px.pie(df_items, values='item_revenue', names='name',
+                             title='Revenue Share by Item',
+                             template='plotly_white',
+                             color_discrete_sequence=['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4'])
+            fig_rev.update_layout(paper_bgcolor='rgba(0,0,0,0)', font_family='Poppins')
+            fig_rev.update_traces(textinfo='percent+label', textfont_size=11)
+            st.plotly_chart(fig_rev, use_container_width=True)
+
+        best = df_items.iloc[0]
+        worst = df_items.iloc[-1]
+        ic1, ic2, ic3 = st.columns(3)
+        with ic1:
+            show_metric_card("Top Seller", f"{best['name']}", "🏆", "emerald")
+        with ic2:
+            show_metric_card("Top Seller Revenue", f"${best['item_revenue']:,.2f}", "💵", "indigo")
+        with ic3:
+            show_metric_card("Lowest Seller", f"{worst['name']}", "📉", "amber")
+
+        st.dataframe(df_items.rename(columns={
+            'name': 'Item', 'category': 'Category',
+            'units_sold': 'Units Sold', 'item_revenue': 'Revenue ($)'
+        }), use_container_width=True, hide_index=True)
+    else:
+        st.info("No completed orders in this date range.")
+
+    # ── Time Patterns ─────────────────────────────────────────────────
+    st.markdown("### ⏰ Busy Hours & Time Patterns")
+
+    cursor.execute("""
+        SELECT created_at FROM orders WHERE status = 'completed'
+    """)
+    time_rows = cursor.fetchall()
+
+    if time_rows:
+        df_time = pd.DataFrame([dict(r) for r in time_rows])
+        df_time['created_at'] = pd.to_datetime(df_time['created_at'])
+        df_time['hour'] = df_time['created_at'].dt.hour
+        df_time['day_name'] = df_time['created_at'].dt.day_name()
+        df_time['day_num'] = df_time['created_at'].dt.dayofweek
+
+        hourly_counts = df_time.groupby('hour').size().reset_index(name='orders')
+        all_hours = pd.DataFrame({'hour': range(24)})
+        hourly_counts = all_hours.merge(hourly_counts, on='hour', how='left').fillna(0)
+        hourly_counts['orders'] = hourly_counts['orders'].astype(int)
+
+        tp1, tp2 = st.columns([3, 2])
+
+        with tp1:
+            fig_hourly = px.bar(hourly_counts, x='hour', y='orders',
+                                title='Orders by Hour of Day',
+                                labels={'orders': 'Number of Orders', 'hour': 'Hour'},
+                                template='plotly_white')
+            fig_hourly.update_traces(
+                marker_color=['#6366f1' if v < hourly_counts['orders'].quantile(0.75)
+                              else '#ec4899' if v >= hourly_counts['orders'].quantile(0.9)
+                              else '#818cf8' for v in hourly_counts['orders']]
+            )
+            fig_hourly.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                                     font_family='Poppins', xaxis=dict(dtick=1))
+            st.plotly_chart(fig_hourly, use_container_width=True)
+
+        peak_hour = int(hourly_counts.loc[hourly_counts['orders'].idxmax(), 'hour'])
+        quiet_hour = int(hourly_counts.loc[hourly_counts['orders'].idxmin(), 'hour'])
+        peak_day = df_time.groupby('day_name').size().idxmax()
+
+        tc1, tc2, tc3 = st.columns(3)
+        with tc1:
+            show_metric_card("Peak Hour", f"{peak_hour:02d}:00", "🔥", "indigo")
+        with tc2:
+            show_metric_card("Quietest Hour", f"{quiet_hour:02d}:00", "🌙", "amber")
+        with tc3:
+            show_metric_card("Busiest Day", f"{peak_day}", "📅", "emerald")
+
+        with tp2:
+            day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+            daily = df_time.groupby('day_name').size().reindex(day_order).fillna(0).reset_index()
+            daily.columns = ['day', 'orders']
+            daily['orders'] = daily['orders'].astype(int)
+            fig_daily = px.bar(daily, x='day', y='orders',
+                               title='Orders by Day of Week',
+                               labels={'orders': 'Orders', 'day': 'Day'},
+                               template='plotly_white')
+            fig_daily.update_traces(marker_color='#6366f1')
+            fig_daily.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                                    font_family='Poppins', xaxis_tickangle=-30)
+            st.plotly_chart(fig_daily, use_container_width=True)
+
+        st.markdown("##### 🔥 Hourly Heatmap")
+        pivot = df_time.groupby(['day_name', 'hour']).size().reset_index(name='orders')
+        heatmap_data = pivot.pivot(index='day_name', columns='hour', values='orders').fillna(0)
+        heatmap_data = heatmap_data.reindex([d for d in day_order if d in heatmap_data.index])
+
+        fig_heat = px.imshow(heatmap_data, labels=dict(x="Hour", y="Day", color="Orders"),
+                             title="Order Volume Heatmap",
+                             template='plotly_white',
+                             color_continuous_scale=['#e0e7ff', '#6366f1', '#ec4899'])
+        fig_heat.update_layout(paper_bgcolor='rgba(0,0,0,0)', font_family='Poppins',
+                               xaxis=dict(dtick=1))
+        st.plotly_chart(fig_heat, use_container_width=True)
+
+        st.info(f"💡 **Insight:** Your busiest time is around **{peak_hour:02d}:00** on **{peak_day}s**. "
+                f"Consider scheduling extra staff during peak hours and running promotions during the quietest hour ({quiet_hour:02d}:00) to boost traffic.")
+    else:
+        st.info("No completed order data available for time pattern analysis.")
+
+    # Inventory
+    st.markdown("### 🥦 Ingredient Inventory")
     cursor.execute("SELECT item_name, current_quantity, min_threshold, unit, last_updated FROM inventory")
     inv_rows = [dict(r) for r in cursor.fetchall()]
     conn.close()
-    
+
     if inv_rows:
         df_inv = pd.DataFrame(inv_rows)
-        st.dataframe(
-            df_inv.rename(columns={
-                'item_name': 'Ingredient Name',
-                'current_quantity': 'Stock Level',
-                'min_threshold': 'Threshold Alert Limit',
-                'unit': 'Unit',
-                'last_updated': 'Last Checked'
-            }), 
-            use_container_width=True,
-            hide_index=True
-        )
-        
-        # Predictive Stockout forecasting
-        st.markdown("##### 🔮 AI Stockout Demand Forecasting")
-        selected_forecast_item = st.selectbox("Select ingredient for AI demand analysis:", [r['item_name'] for r in inv_rows])
-        
-        if st.button("Forecast Depletion Velocity"):
-            item_data = next((r for r in inv_rows if r['item_name'] == selected_forecast_item), None)
+        st.dataframe(df_inv.rename(columns={
+            'item_name': 'Ingredient', 'current_quantity': 'Stock',
+            'min_threshold': 'Threshold', 'unit': 'Unit', 'last_updated': 'Last Updated'
+        }), use_container_width=True, hide_index=True)
+
+        st.markdown("##### 🔮 AI Stockout Forecast")
+        sel = st.selectbox("Select ingredient:", [r['item_name'] for r in inv_rows], key="forecast_sel")
+        if st.button("Forecast Depletion", use_container_width=True):
+            item_data = next((r for r in inv_rows if r['item_name'] == sel), None)
             if item_data:
-                with st.spinner("Analyzing depletion velocity metrics..."):
-                    fc = get_demand_forecast(selected_forecast_item, item_data['current_quantity'])
-                    
-                col_fc1, col_fc2 = st.columns([1, 2])
-                with col_fc1:
-                    st.markdown(f"**Predicted Stockout:** `{fc.get('predicted_runout_days')} days`")
-                    st.markdown(f"**Risk Level Assessment:** `{fc.get('risk_level')}`")
-                with col_fc2:
+                with st.spinner("Analyzing..."):
+                    fc = get_demand_forecast(sel, item_data['current_quantity'])
+                fc1, fc2 = st.columns([1, 2])
+                with fc1:
+                    st.markdown(f"**Days to Stockout:** `{fc.get('predicted_runout_days')}`")
+                    st.markdown(f"**Risk:** `{fc.get('risk_level')}`")
+                with fc2:
                     st.info(fc.get('explanation'))
-                    
-        # Stock update tool (to trigger shrinkage manually)
-        st.markdown("##### 📥 Perform Physical Stock Count Reconciliation")
-        col_up1, col_up2, col_up3 = st.columns(3)
-        with col_up1:
-            up_item = st.selectbox("Select counted ingredient:", [r['item_name'] for r in inv_rows], key="up_item")
-        with col_up2:
-            up_qty = st.number_input("Physical Count quantity:", min_value=0.0, max_value=200.0, step=1.0)
-        with col_up3:
-            if st.button("Submit Reconciliation Count"):
-                # Trigger shrinkage logic check
+
+        st.markdown("##### 📥 Physical Stock Count")
+        uc1, uc2, uc3 = st.columns(3)
+        with uc1:
+            up_item = st.selectbox("Ingredient:", [r['item_name'] for r in inv_rows], key="up_item")
+        with uc2:
+            up_qty = st.number_input("Physical Count:", min_value=0.0, max_value=200.0, step=1.0)
+        with uc3:
+            if st.button("Submit Count", use_container_width=True):
                 alert_id = check_shrinkage_anomaly(up_item, up_qty, "admin")
-                
-                # Save changes
                 conn = get_db_connection()
                 cursor = conn.cursor()
-                cursor.execute(
-                    "UPDATE inventory SET current_quantity = ?, last_updated = ? WHERE item_name = ?",
-                    (up_qty, datetime.now().isoformat(), up_item)
-                )
+                cursor.execute("UPDATE inventory SET current_quantity = ?, last_updated = ? WHERE item_name = ?",
+                               (up_qty, datetime.now().isoformat(), up_item))
                 conn.commit()
                 conn.close()
-                
                 if alert_id:
-                    st.error(f"Discrepancy alert #{alert_id} triggered! Theoretical levels do not match physical count.")
+                    st.error(f"Discrepancy alert #{alert_id} triggered!")
                 else:
-                    st.success("Inventory updated and verified.")
-                st.rerun()
+                    st.success("Inventory verified.")
+
+
+def render_tips_dashboard():
+    st.markdown("### 💰 Tips & Waiter Earnings")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COALESCE(SUM(tip), 0) FROM orders WHERE status = 'completed'")
+    total_tips = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COALESCE(AVG(tip), 0) FROM orders WHERE status = 'completed' AND tip > 0")
+    avg_tip = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM orders WHERE status = 'completed' AND tip > 0")
+    tipped_orders = cursor.fetchone()[0]
+
+    from components.ui_helpers import show_metric_card
+    k1, k2, k3 = st.columns(3)
+    with k1:
+        show_metric_card("Total Tips Collected", f"${total_tips:,.2f}", "💰", "emerald")
+    with k2:
+        show_metric_card("Average Tip", f"${avg_tip:,.2f}", "📊", "indigo")
+    with k3:
+        show_metric_card("Orders with Tips", str(tipped_orders), "🧾", "indigo")
+
+    st.markdown("---")
+
+    # Per-waiter earnings
+    cursor.execute("""
+        SELECT served_by,
+               COUNT(*) as total_orders,
+               SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_orders,
+               COALESCE(SUM(CASE WHEN status = 'completed' THEN tip ELSE 0 END), 0) as total_tips,
+               COALESCE(AVG(CASE WHEN status = 'completed' AND tip > 0 THEN tip END), 0) as avg_tip,
+               COALESCE(SUM(CASE WHEN status = 'completed' THEN total ELSE 0 END), 0) as total_revenue
+        FROM orders WHERE served_by IS NOT NULL
+        GROUP BY served_by
+    """)
+    waiter_data = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    if waiter_data:
+        df_w = pd.DataFrame(waiter_data)
+        df_w['tip_pct'] = ((df_w['total_tips'] / df_w['total_revenue'].replace(0, 1)) * 100).round(1)
+
+        fig = px.bar(df_w, x='served_by', y='total_tips',
+                     title='Total Tips by Waiter',
+                     labels={'total_tips': 'Tips ($)', 'served_by': 'Waiter'},
+                     template='plotly_white',
+                     color='total_tips',
+                     color_continuous_scale=['#6366f1', '#ec4899'])
+        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                          font_family='Poppins')
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.markdown("#### 📋 Waiter Breakdown")
+        for w in waiter_data:
+            tips = w['total_tips']
+            completed = w['completed_orders']
+            total = w['total_orders']
+            avg = w['avg_tip']
+            st.markdown(f"""
+            <div class="glass-card" style="padding:16px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <strong style="font-size:1.05rem;">{w['served_by']}</strong>
+                    <div style="font-size:0.82rem; color:#64748b; margin-top:2px;">
+                        {completed}/{total} orders completed
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:1.4rem; font-weight:800; color:#10b981;">${tips:.2f}</div>
+                    <div style="font-size:0.78rem; color:#64748b;">avg ${avg:.2f}/order</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Tips over time
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT created_at, tip, served_by FROM orders WHERE tip > 0 AND status = 'completed'")
+        tip_rows = [dict(r) for r in cursor.fetchall()]
+        conn.close()
+        if tip_rows:
+            df_tips = pd.DataFrame(tip_rows)
+            df_tips['created_at'] = pd.to_datetime(df_tips['created_at'])
+            fig2 = px.scatter(df_tips, x='created_at', y='tip', color='served_by',
+                              size='tip', title='Tips Over Time',
+                              labels={'tip': 'Tip ($)', 'created_at': 'Date', 'served_by': 'Waiter'},
+                              template='plotly_white')
+            fig2.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                               font_family='Poppins')
+            st.plotly_chart(fig2, use_container_width=True)
 
 
 def render_ai_copilot():
-    st.markdown("### 🤖 Loss Prevention & Forensic Assistant")
-    st.markdown("Ask the AI about your alerts, operational gaps, employee transaction behavior, or shrinkage metrics.")
+    st.markdown("### 🤖 AI Business Advisor")
+    st.markdown("Ask about sales trends, inventory, tips, or operational patterns.")
 
-    # Initialize chat history
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Display chat messages
-    for msg_role, text in st.session_state.messages:
-        with st.chat_message(msg_role):
+    for role, text in st.session_state.messages:
+        with st.chat_message(role):
             st.markdown(text)
-            
-    # Quick chips
-    chips = ["Audit Bob's transaction voids", "What ingredients are below alert threshold?", "Draft a restock list for low items"]
+
+    chips = ["Audit Bob's voids", "What's low on stock?", "Show tip earnings", "Draft a restock list"]
     cols = st.columns(len(chips))
     for col, chip_text in zip(cols, chips):
         with col:
-            if st.button(chip_text, width="stretch"):
-                # Add to chat
+            if st.button(chip_text, use_container_width=True):
                 st.session_state.messages.append(("user", chip_text))
-                with st.spinner("AI is checking server audit files..."):
+                with st.spinner("Thinking..."):
                     res = ask_manager_assistant(st.session_state.messages[:-1], chip_text)
                 st.session_state.messages.append(("assistant", res))
                 st.rerun()
-                
-    # Chat input
-    if prompt := st.chat_input("Ask about suspicious voids, discounts, or inventory..."):
+
+    if prompt := st.chat_input("Ask about sales, inventory, tips..."):
         st.session_state.messages.append(("user", prompt))
         with st.chat_message("user"):
             st.markdown(prompt)
-            
         with st.chat_message("assistant"):
-            with st.spinner("AI is checking server audit files..."):
+            with st.spinner("Thinking..."):
                 res = ask_manager_assistant(st.session_state.messages[:-1], prompt)
             st.markdown(res)
             st.session_state.messages.append(("assistant", res))
@@ -311,31 +577,32 @@ def update_alert_status(alert_id, status):
     conn.close()
 
 
-# Simulators for Anomaly alerts
-def simulate_void_anomaly():
-    # Insert completed order, then void it
+def check_low_stock_alerts():
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+    cursor.execute("SELECT item_name, current_quantity, min_threshold FROM inventory WHERE current_quantity <= min_threshold")
+    low_items = cursor.fetchall()
+    if low_items:
+        items_str = ", ".join([f"**{i['item_name']}** ({i['current_quantity']}{i.get('unit','')})" for i in low_items])
+        st.warning(f"⚠️ Low stock alert: {items_str}")
+    conn.close()
+
+
+def simulate_void_anomaly():
+    conn = get_db_connection()
+    cursor = conn.cursor()
     now_str = datetime.now().isoformat()
-    # 1. Insert order
+    prepping_str = (datetime.now() - timedelta(minutes=10)).isoformat()
     cursor.execute(
-        "INSERT INTO orders (table_number, status, subtotal, discount, total, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-        ("Table 2", "preparing", 53.0, 0.0, 53.0, now_str)
+        "INSERT INTO orders (table_number, status, subtotal, discount, total, tax, tip, payment_method, served_by, created_at, prepping_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ("Table 2", "preparing", 53.0, 0.0, 53.0, 4.64, 10.60, "Cash", "bob", now_str, prepping_str)
     )
     order_id = cursor.lastrowid
-    
-    # 2. Insert order items (Wagyu + Beer)
     cursor.execute("INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price) VALUES (?, ?, ?, ?)", (order_id, 3, 1, 45.0))
     cursor.execute("INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price) VALUES (?, ?, ?, ?)", (order_id, 6, 1, 8.0))
-    
     conn.commit()
     conn.close()
-    
-    # 3. Cancel order through check trigger
     check_void_anomaly(order_id, "bob", "preparing")
-    
-    # 4. Set status to voided
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("UPDATE orders SET status = 'voided' WHERE id = ?", (order_id,))
@@ -345,38 +612,23 @@ def simulate_void_anomaly():
 def simulate_discount_anomaly():
     conn = get_db_connection()
     cursor = conn.cursor()
-    
     now_str = datetime.now().isoformat()
-    # 1. Insert order with 50% discount applied by bob
-    subtotal = 90.0
-    disc = 45.0
-    total = 45.0
     cursor.execute(
-        "INSERT INTO orders (table_number, status, subtotal, discount, total, discount_applied_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        ("Table 3", "completed", subtotal, disc, total, "bob", now_str)
+        "INSERT INTO orders (table_number, status, subtotal, discount, total, tax, tip, payment_method, discount_applied_by, served_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ("Table 3", "completed", 90.0, 45.0, 57.38, 7.88, 9.0, "Cash", "bob", "alice", now_str)
     )
     order_id = cursor.lastrowid
-    
-    # 2. Insert order items (2x Miso Ramen + 1x Ribeye)
     cursor.execute("INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price) VALUES (?, ?, ?, ?)", (order_id, 2, 2, 18.0))
     cursor.execute("INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price) VALUES (?, ?, ?, ?)", (order_id, 3, 1, 45.0))
-    
     conn.commit()
     conn.close()
-    
-    # 3. Audit check triggers discount anomaly
-    check_discount_anomaly(order_id, "bob", disc)
+    check_discount_anomaly(order_id, "bob", 45.0)
 
 def simulate_shrinkage_anomaly():
-    # Force potato counts to be lower
     check_shrinkage_anomaly("Potatoes", 10.0, "chef_ramsay")
-    
-    # Update inventory to reflect counted value
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute(
-        "UPDATE inventory SET current_quantity = 10.0, last_updated = ? WHERE item_name = 'Potatoes'",
-        (datetime.now().isoformat(),)
-    )
+    cursor.execute("UPDATE inventory SET current_quantity = 10.0, last_updated = ? WHERE item_name = 'Potatoes'",
+                   (datetime.now().isoformat(),))
     conn.commit()
     conn.close()

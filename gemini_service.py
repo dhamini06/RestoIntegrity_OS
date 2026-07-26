@@ -8,10 +8,10 @@ from database import get_db_connection
 
 # Structured Output Schemas
 class AIIncidentAnalysis(BaseModel):
-    threat_classification: str = Field(description="Security or loss threat category (e.g., Cash Skimming, Discount Abuse, Spoilage Shrinkage)")
-    risk_score: int = Field(description="Threat risk score from 0 (Safe) to 100 (Critical)")
-    incident_summary: str = Field(description="Professional incident analysis summarizing what suspicious behavior took place and why it is a risk")
-    recommended_actions: list[str] = Field(description="3 actionable steps for the restaurant owner to investigate or remediate the risk")
+    threat_classification: str = Field(description="Operational issue category (e.g., High Cancellation Rate, Discount Spike, Stock Depletion)")
+    risk_score: int = Field(description="Priority score from 0 (Low) to 100 (Critical)")
+    incident_summary: str = Field(description="Professional analysis summarizing the operational event and its business impact")
+    recommended_actions: list[str] = Field(description="3 actionable steps for the restaurant owner to address the issue")
 
 class RecommendationResponse(BaseModel):
     suggested_item_name: str = Field(description="Name of the menu item recommended from the restaurant menu")
@@ -33,7 +33,7 @@ def get_gemini_client():
 
 def investigate_alert_with_gemini(alert_id):
     """
-    Enriches a security alert with structured AI analysis.
+    Enriches an operational alert with structured AI analysis.
     """
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -53,8 +53,8 @@ def investigate_alert_with_gemini(alert_id):
     if client:
         try:
             prompt = f"""
-            You are a Lead Loss Prevention and Fraud Analyst for a high-end restaurant group.
-            Analyze the following raw system alert:
+            You are a Restaurant Operations Consultant analyzing operational data.
+            Analyze the following alert:
             
             Alert ID: {alert_id}
             Alert Type: {alert_type}
@@ -62,7 +62,7 @@ def investigate_alert_with_gemini(alert_id):
             Timestamp: {created_at}
             Alert Details: {json.dumps(details, indent=2)}
             
-            Classify the threat, calculate a risk score (0 to 100), write a professional summary of the incident, and outline 3 remediation/investigation steps for the owner.
+            Classify the issue, assign a priority score (0 to 100), write a professional summary, and outline 3 action steps for the owner.
             """
             
             response = client.models.generate_content(
@@ -71,7 +71,7 @@ def investigate_alert_with_gemini(alert_id):
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     response_schema=AIIncidentAnalysis,
-                    system_instruction="You analyze restaurant transactions and inventory logs to detect employee theft, fraud, operational slippage, and leakage.",
+                    system_instruction="You analyze restaurant transactions and inventory data to identify operational inefficiencies, revenue leakage, and inventory management issues.",
                     temperature=0.2
                 )
             )
@@ -94,25 +94,25 @@ def investigate_alert_with_gemini(alert_id):
 def generate_offline_alert_analysis(alert_type, details):
     if alert_type == "void_anomaly":
         return {
-            "threat_classification": "Internal Cash Skimming (Post-Preparation Void)",
+            "threat_classification": "High Cancellation Rate (Post-Preparation Void)",
             "risk_score": 85,
-            "incident_summary": f"Order #{details.get('order_id', 'N/A')} on Table {details.get('table_number', 'N/A')} was marked void by '{details.get('staff_username', 'unknown')}' after preparation started. Since the order was processed by the kitchen, the customer likely received the meal and paid. Voiding the ticket allows the staff member to pocket the payment.",
+            "incident_summary": f"Order #{details.get('order_id', 'N/A')} on Table {details.get('table_number', 'N/A')} was voided by '{details.get('staff_username', 'unknown')}' after preparation started. The kitchen had already processed this order, so food was likely served. Late cancellations disrupt revenue tracking and kitchen workflow.",
             "recommended_actions": [
-                "Review CCTV camera footage covering the POS terminal and the kitchen pass at the void timestamp.",
-                "Verify with the kitchen staff if this ticket was completed and dispatched.",
-                "Audit the staff member's drawer balance for discrepancies at shift end."
+                "Review the order timeline to understand why the cancellation happened so late.",
+                "Confirm with kitchen staff if this ticket was completed and dispatched.",
+                "Discuss void procedures with the staff member to prevent future late cancellations."
             ]
         }
     elif alert_type == "discount_anomaly":
         pct = details.get('discount_percentage', 0)
         return {
-            "threat_classification": "Employee Discount Abuse / Policy Violation",
+            "threat_classification": "Unusual Discount Pattern",
             "risk_score": 60 if pct < 50 else 80,
-            "incident_summary": f"A manual discount of {pct}% (${details.get('discount_amount', 0)}) was applied by '{details.get('staff_username', 'unknown')}' on Table {details.get('table_number', 'N/A')}. This exceeds the threshold for unauthorized standard discounts without supervisor approval.",
+            "incident_summary": f"A manual discount of {pct}% (${details.get('discount_amount', 0)}) was applied by '{details.get('staff_username', 'unknown')}' on Table {details.get('table_number', 'N/A')}. This exceeds the standard discount threshold without supervisor approval.",
             "recommended_actions": [
-                "Verify if the table was a verified VIP, comps, or management exception.",
-                "Compare the staff login against supervisor authorization timestamps.",
-                "Enforce manager override controls on the POS system for discounts exceeding 20%."
+                "Verify if the table was a VIP or authorized comp.",
+                "Review the staff member's discount frequency for patterns.",
+                "Consider requiring manager override for discounts exceeding 20%."
             ]
         }
     else: # shrinkage
@@ -120,13 +120,13 @@ def generate_offline_alert_analysis(alert_type, details):
         disc = details.get('discrepancy', 0)
         unit = details.get('unit', '')
         return {
-            "threat_classification": "Inventory Leakage (Unreconciled Stock Loss)",
+            "threat_classification": "Stock Depletion Warning",
             "risk_score": 70,
-            "incident_summary": f"Physical counts of {item} show a loss of {disc} {unit}s compared to theoretical levels calculated from sales data. The kitchen is depleting stock faster than sales records can justify.",
+            "incident_summary": f"Physical counts of {item} show {disc} {unit}(s) unaccounted for compared to sales records. The kitchen is depleting stock faster than sales data explains.",
             "recommended_actions": [
-                "Interview kitchen staff regarding portion control or unlogged waste/spoilage.",
-                "Check food delivery receipt records to verify if the last supply shipment matches the invoice quantity.",
-                "Secure storage storage lockers and run spot inventory counts daily."
+                "Check with kitchen staff on portion control or unlogged waste/spoilage.",
+                "Verify delivery receipts match the last supply invoice.",
+                "Run daily spot counts on high-value ingredients."
             ]
         }
 
@@ -239,7 +239,7 @@ def get_demand_forecast(ingredient_name, current_qty):
 
 def ask_manager_assistant(chat_history, user_message):
     """
-    Interact with the manager's AI assistant about alerts, sales, and stock.
+    Interact with the manager's AI assistant about operations, sales, and stock.
     """
     # Fetch some context from DB to make assistant smart
     conn = get_db_connection()
@@ -256,8 +256,8 @@ def ask_manager_assistant(chat_history, user_message):
     conn.close()
     
     context = {
-        "system_status": "RestoIntegrity OS Operational Integrity Guard active.",
-        "recent_security_alerts": recent_alerts,
+        "system_status": "RestoIntegrity OS Smart Operations Platform active.",
+        "recent_operational_alerts": recent_alerts,
         "current_inventory": inventory
     }
     
@@ -279,7 +279,7 @@ def ask_manager_assistant(chat_history, user_message):
             
             Manager's Message: {user_message}
             
-            Respond as a helpful, expert restaurant management assistant. Answer questions using the provided database context when relevant. Keep your answer professional, concise, and focused on security, loss prevention, and operational recommendations.
+            Respond as a helpful, expert restaurant operations assistant. Answer questions using the provided database context when relevant. Keep your answer professional, concise, and focused on operational insights, inventory management, and business recommendations.
             """
             
             response = client.models.generate_content(
@@ -296,10 +296,10 @@ def ask_manager_assistant(chat_history, user_message):
     # Offline Fallback Assistant
     msg = user_message.lower()
     if "alert" in msg or "security" in msg or "fraud" in msg:
-        return f"Operational Integrity Feed shows {len(recent_alerts)} recent events. The most critical is a High severity void anomaly triggered by Bob. CCTV review is recommended."
+        return f"Operations Hub shows {len(recent_alerts)} recent events. The most notable is a high-severity cancellation anomaly triggered by Bob. Consider reviewing the order lifecycle for that table."
     elif "inventory" in msg or "stock" in msg or "shrink" in msg:
         low_items = [i['item_name'] for i in inventory if i['current_quantity'] <= i['min_threshold']]
         low_str = ", ".join(low_items) if low_items else "none"
         return f"All critical food stocks are stable. Inventory items currently below warning threshold: **{low_str}**. Discrepancy checks ran 12 hours ago."
     else:
-        return "Hello! I am your RestoIntegrity OS Co-pilot. I can help you investigate transaction voids, audit discount logs, track inventory shrinkage, or forecast stock runouts. What would you like to check today?"
+        return "Hello! I'm your RestoIntegrity OS Business Advisor. I can help you analyze order cancellations, review discount patterns, track inventory, or forecast stock runouts. What would you like to check today?"
