@@ -64,30 +64,6 @@ def lookup_user(email):
     except Exception:
         return None
 
-def register_user(full_name, email, password, role):
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM users WHERE username = ?", (email,))
-        if cursor.fetchone()[0] > 0:
-            conn.close()
-            return None, "An account with this email already exists."
-        cursor.execute(
-            "INSERT INTO users (username, password_hash, role, full_name) VALUES (?, ?, ?, ?)",
-            (email, hash_password(password), role, full_name)
-        )
-        conn.commit()
-        user_id = cursor.lastrowid
-        conn.close()
-        return {
-            "id": user_id,
-            "username": email,
-            "role": role,
-            "full_name": full_name,
-        }, None
-    except Exception as e:
-        return None, str(e)
-
 def render_login_page():
     col1, col2, col3 = st.columns([1, 1.4, 1])
     with col2:
@@ -109,21 +85,16 @@ def render_login_page():
         page = st.session_state.get("login_page", "main")
 
         if page == "main":
-            st.markdown("<p style='text-align:center; font-size:0.85rem; color:#5D4037; font-weight:500; margin-bottom:24px;'>Sign in to your account</p>", unsafe_allow_html=True)
+            st.markdown("""
+            <div style="text-align:center; margin-bottom:24px;">
+                <p style="color:#8C7A6B; font-size:0.85rem; margin:0; font-family:Inter, sans-serif;">
+                    Sign in to continue to your dashboard
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
 
             if st.button("Sign in with Google", key="google_continue", use_container_width=True):
                 st.session_state.login_page = "google_email"
-                st.rerun()
-
-            st.markdown("<div style='display:flex; align-items:center; margin:20px 0;'><div style='flex:1; height:1px; background:#E8D5A3;'></div><div style='padding:0 12px; color:#8C7A6B; font-size:0.8rem;'>or</div><div style='flex:1; height:1px; background:#E8D5A3;'></div></div>", unsafe_allow_html=True)
-
-            if st.button("Sign in with email", key="show_email", use_container_width=True):
-                st.session_state.login_page = "email_login"
-                st.rerun()
-
-            st.markdown("<div style='text-align:center; margin-top:20px;'><a style='color:#8C7A6B; font-size:0.8rem; cursor:pointer; text-decoration:none;'>Don't have an account?</a></div>", unsafe_allow_html=True)
-            if st.button("Create an account", key="show_register", use_container_width=True):
-                st.session_state.login_page = "register"
                 st.rerun()
 
         elif page == "google_email":
@@ -184,47 +155,6 @@ def render_login_page():
                         st.rerun()
                     else:
                         st.error("Wrong password. Try again.")
-
-        elif page == "email_login":
-            st.markdown("<p style='text-align:center; font-size:0.85rem; color:#5D4037; font-weight:500; margin-bottom:20px;'>Sign in with email</p>", unsafe_allow_html=True)
-
-            with st.form("login_form_email"):
-                email = st.text_input("Email", placeholder="you@resto.com", key="login_email")
-                password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_pass")
-                if st.form_submit_button("🚀 Sign In", type="primary", use_container_width=True):
-                    user = authenticate(email, password)
-                    if user:
-                        st.session_state.user = user
-                        st.rerun()
-                    else:
-                        st.error("Invalid email or password.")
-
-            if st.button("← Back", key="email_back", use_container_width=True):
-                st.session_state.login_page = "main"
-                st.rerun()
-
-        elif page == "register":
-            st.markdown("<p style='text-align:center; font-size:0.85rem; color:#5D4037; font-weight:500; margin-bottom:20px;'>Create your account</p>", unsafe_allow_html=True)
-
-            with st.form("register_form"):
-                full_name = st.text_input("Full name", placeholder="John Doe", key="reg_name")
-                reg_email = st.text_input("Email", placeholder="you@resto.com", key="reg_email")
-                reg_pass = st.text_input("Password", type="password", placeholder="Create a password", key="reg_pass")
-                reg_role = st.selectbox("Role", ["staff", "admin", "kitchen", "customer"], key="reg_role")
-                if st.form_submit_button("Create Account", type="primary", use_container_width=True):
-                    if full_name and reg_email and reg_pass:
-                        user, err = register_user(full_name, reg_email, reg_pass, reg_role)
-                        if user:
-                            st.session_state.user = user
-                            st.rerun()
-                        else:
-                            st.error(err)
-                    else:
-                        st.error("Please fill in all fields.")
-
-            if st.button("← Back to sign in", key="reg_back", use_container_width=True):
-                st.session_state.login_page = "main"
-                st.rerun()
 
         st.markdown("""
         <div style="text-align:center; margin-top:24px;">
