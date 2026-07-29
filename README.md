@@ -107,14 +107,6 @@ Open `http://localhost:8501` in your browser.
 | **kitchen** (chef) | 👨‍🍳 Kitchen View | Sees the live ticket pipeline — pending, preparing, completed orders with aging badges. Can mark orders as preparing/complete. |
 | **customer** (guest) | 📱 Customer Menu | Self-service digital menu. Browses items, adds to cart, customizes with tip and payment method, places orders. |
 
----
-
-## 📸 Screenshots
-
-*(Add screenshots here)*
-
----
-
 ## 🔗 Live Demo
 
 **https://restointegrityos-copcp7vrmntkfjrhabjb9u.streamlit.app/**
