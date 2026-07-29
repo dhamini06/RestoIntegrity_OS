@@ -191,9 +191,9 @@ def render_analytics():
     from components.ui_helpers import show_metric_card
     k1, k2, k3 = st.columns(3)
     with k1:
-        show_metric_card("Verified Revenue", f"${total_sales:,.2f}", "💵", "indigo")
+        show_metric_card("Verified Revenue", f"${total_sales:,.2f}", "💵", "gold")
     with k2:
-        show_metric_card("Total Orders", str(total_orders), "📦", "emerald")
+        show_metric_card("Total Orders", str(total_orders), "📦", "gold")
     with k3:
         show_metric_card("Active Alerts", str(active_alerts), "📋", "amber")
 
@@ -301,9 +301,9 @@ def render_analytics():
         worst = df_items.iloc[-1]
         ic1, ic2, ic3 = st.columns(3)
         with ic1:
-            show_metric_card("Top Seller", f"{best['name']}", "🏆", "emerald")
+            show_metric_card("Top Seller", f"{best['name']}", "🏆", "gold")
         with ic2:
-            show_metric_card("Top Seller Revenue", f"${best['item_revenue']:,.2f}", "💵", "indigo")
+            show_metric_card("Top Seller Revenue", f"${best['item_revenue']:,.2f}", "💵", "gold")
         with ic3:
             show_metric_card("Lowest Seller", f"{worst['name']}", "📉", "amber")
 
@@ -356,11 +356,11 @@ def render_analytics():
 
         tc1, tc2, tc3 = st.columns(3)
         with tc1:
-            show_metric_card("Peak Hour", f"{peak_hour:02d}:00", "🔥", "indigo")
+            show_metric_card("Peak Hour", f"{peak_hour:02d}:00", "🔥", "gold")
         with tc2:
             show_metric_card("Quietest Hour", f"{quiet_hour:02d}:00", "🌙", "amber")
         with tc3:
-            show_metric_card("Busiest Day", f"{peak_day}", "📅", "emerald")
+            show_metric_card("Busiest Day", f"{peak_day}", "📅", "gold")
 
         with tp2:
             day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -460,11 +460,11 @@ def render_tips_dashboard():
     from components.ui_helpers import show_metric_card
     k1, k2, k3 = st.columns(3)
     with k1:
-        show_metric_card("Total Tips Collected", f"${total_tips:,.2f}", "💰", "emerald")
+        show_metric_card("Total Tips Collected", f"${total_tips:,.2f}", "💰", "gold")
     with k2:
-        show_metric_card("Average Tip", f"${avg_tip:,.2f}", "📊", "indigo")
+        show_metric_card("Average Tip", f"${avg_tip:,.2f}", "📊", "gold")
     with k3:
-        show_metric_card("Orders with Tips", str(tipped_orders), "🧾", "indigo")
+        show_metric_card("Orders with Tips", str(tipped_orders), "🧾", "gold")
 
     st.markdown("---")
 

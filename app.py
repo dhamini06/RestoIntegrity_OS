@@ -24,9 +24,9 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def login_form():
-    st.sidebar.markdown("<h3 class='glow-indigo'>🔐 Sign In</h3>", unsafe_allow_html=True)
-    username = st.sidebar.text_input("Username", key="login_user", placeholder="Enter username")
-    password = st.sidebar.text_input("Password", type="password", key="login_pass", placeholder="Enter password")
+    st.sidebar.markdown("<h3 style='color:#5D4037; font-family:Playfair Display, serif;'>🔐 Sign In</h3>", unsafe_allow_html=True)
+    username = st.sidebar.text_input("Username", key="login_user", placeholder="Username")
+    password = st.sidebar.text_input("Password", type="password", key="login_pass", placeholder="Password")
 
     if st.sidebar.button("🚀 Sign In", key="login_btn", type="primary", use_container_width=True):
         conn = get_db_connection()
@@ -50,10 +50,9 @@ def login_form():
 
     if "user" not in st.session_state:
         st.sidebar.markdown("""
-        <div style="background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(236,72,153,0.08));
-             border-radius: 12px; padding: 14px; margin-top: 16px; border: 1px solid rgba(99,102,241,0.12);">
-            <div style="font-size:0.75rem; color:#64748b; font-weight:600; margin-bottom:6px;">Demo Credentials</div>
-            <div style="font-size:0.8rem; color:#1e293b; line-height:1.6;">
+        <div style="background: #F8F3E9; border-radius: 12px; padding: 14px; margin-top: 16px; border: 1px solid #E8D5A3;">
+            <div style="font-size:0.75rem; color:#8C7A6B; font-weight:600; margin-bottom:6px;">Demo Credentials</div>
+            <div style="font-size:0.8rem; color:#5D4037; line-height:1.6;">
                 <b>admin</b> / admin123<br>
                 <b>alice</b> / alice123<br>
                 <b>bob</b> / bob123<br>
@@ -66,19 +65,19 @@ def login_form_main():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown("""
-        <div style="background: white; border-radius: 20px; padding: 36px 32px;
-             box-shadow: 0 8px 40px rgba(99,102,241,0.12); border: 1px solid #e2e8f0;
+        <div style="background: white; border-radius: 20px; padding: 40px 36px;
+             box-shadow: 0 8px 40px rgba(197, 165, 90, 0.12); border: 1px solid #E8D5A3;
              animation: fadeInUp 0.6s ease-out;">
             <div style="text-align:center; margin-bottom: 24px;">
                 <div style="font-size:2.5rem;">📊</div>
-                <h2 style="color:#1e293b; margin: 8px 0 4px; font-weight:800;">RestoIntegrity OS</h2>
-                <p style="color:#64748b; font-size:0.85rem; margin:0;">Sign in to your dashboard</p>
+                <h2 style="color:#2C1810; margin: 8px 0 4px; font-weight:800; font-family:Playfair Display, serif;">RestoIntegrity OS</h2>
+                <p style="color:#8C7A6B; font-size:0.85rem; margin:0; font-family:Inter, sans-serif;">Sign in to your dashboard</p>
             </div>
         """, unsafe_allow_html=True)
 
         with st.form("login_form_main"):
-            username = st.text_input("Username", placeholder="Enter username", key="login_user_main")
-            password = st.text_input("Password", type="password", placeholder="Enter password", key="login_pass_main")
+            username = st.text_input("Username", placeholder="Username", key="login_user_main")
+            password = st.text_input("Password", type="password", placeholder="Password", key="login_pass_main")
             if st.form_submit_button("🚀 Sign In", type="primary", use_container_width=True):
                 conn = get_db_connection()
                 cursor = conn.cursor()
@@ -100,9 +99,9 @@ def login_form_main():
                     st.error("Invalid credentials. Try again!")
 
         st.markdown("""
-            <div style="margin-top:20px; padding:14px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
-                <div style="font-size:0.75rem; color:#64748b; font-weight:600; margin-bottom:8px;">Demo Credentials</div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.8rem; color:#1e293b;">
+            <div style="margin-top:20px; padding:14px; background:#F8F3E9; border-radius:12px; border:1px solid #E8D5A3;">
+                <div style="font-size:0.75rem; color:#8C7A6B; font-weight:600; margin-bottom:8px;">Demo Credentials</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.85rem; color:#5D4037;">
                     <div><b>admin</b> / admin123</div>
                     <div><b>alice</b> / alice123</div>
                     <div><b>bob</b> / bob123</div>
@@ -138,11 +137,10 @@ ROLE_MAP = {
 allowed_views = ROLE_MAP.get(user["role"], ["📱 Customer Menu"])
 
 st.sidebar.markdown(f"""
-<div style="background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(236,72,153,0.08));
-     border-radius: 14px; padding: 14px; margin: 12px 0; border: 1px solid rgba(99,102,241,0.12);">
-    <div style="font-size:0.8rem; color:#64748b;">Welcome back,</div>
-    <div style="font-size:1.1rem; font-weight:700; color:#1e293b;">{user['full_name']}</div>
-    <div style="margin-top:4px;"><span class="badge badge-indigo">{user['role'].upper()}</span></div>
+<div style="background: #F8F3E9; border-radius: 14px; padding: 14px; margin: 12px 0; border: 1px solid #E8D5A3;">
+    <div style="font-size:0.8rem; color:#8C7A6B;">Welcome back,</div>
+    <div style="font-size:1.1rem; font-weight:700; color:#2C1810; font-family:Playfair Display, serif;">{user['full_name']}</div>
+    <div style="margin-top:4px;"><span class="badge badge-gold">{user['role'].upper()}</span></div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -151,7 +149,7 @@ role = st.sidebar.radio("Navigate to:", allowed_views, index=0)
 st.sidebar.markdown("---")
 
 if user["role"] == "admin":
-    st.sidebar.markdown("<h4 class='glow-amber'>⚙️ AI Settings</h4>", unsafe_allow_html=True)
+    st.sidebar.markdown("<h4 style='color:#B8860B; font-family:Playfair Display, serif;'>⚙️ AI Settings</h4>", unsafe_allow_html=True)
     api_key = st.sidebar.text_input("Gemini API Key:", type="password", value=os.getenv("GEMINI_API_KEY", ""))
     if api_key:
         os.environ["GEMINI_API_KEY"] = api_key
@@ -160,14 +158,14 @@ if user["role"] == "admin":
         os.environ.pop("GEMINI_API_KEY", None)
 
 st.markdown("""
-<div style="background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
+<div style="background: linear-gradient(135deg, #C5A55A, #A68332, #8B6914);
      padding: 18px 24px; border-radius: 18px; margin-bottom: 25px;
-     box-shadow: 0 8px 30px rgba(99,102,241,0.2);
+     box-shadow: 0 8px 30px rgba(197, 165, 90, 0.2);
      animation: fadeInUp 0.5s ease-out;">
-    <h1 style="color: white; margin: 0; font-size: 1.8rem; font-weight: 800; text-align: center;">
+    <h1 style="color: white; margin: 0; font-size: 1.8rem; font-weight: 800; text-align: center; font-family: Playfair Display, serif;">
         📊 RestoIntegrity OS
     </h1>
-    <p style="color: rgba(255,255,255,0.85); margin: 5px 0 0 0; font-size: 0.9rem; text-align: center; font-weight: 400;">
+    <p style="color: rgba(255,255,255,0.85); margin: 5px 0 0 0; font-size: 0.9rem; text-align: center; font-weight: 400; font-family: Inter, sans-serif;">
         AI-Powered Smart Restaurant Operations Platform
     </p>
 </div>
