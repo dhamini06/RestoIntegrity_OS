@@ -24,18 +24,7 @@ inject_custom_css()
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-def get_all_users():
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT username, full_name, role FROM users")
-        users = [dict(r) for r in cursor.fetchall()]
-        conn.close()
-        return users
-    except Exception:
-        return []
-
-def authenticate(username, password):
+def authenticate(email, password):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -49,7 +38,7 @@ def authenticate(username, password):
             cursor = conn.cursor()
         cursor.execute(
             "SELECT id, username, role, full_name FROM users WHERE username = ? AND password_hash = ?",
-            (username, hash_password(password))
+            (email, hash_password(password))
         )
         user = cursor.fetchone()
         conn.close()
@@ -60,15 +49,44 @@ def authenticate(username, password):
                 "role": user["role"],
                 "full_name": user["full_name"],
             }
-    except Exception as e:
+    except Exception:
         st.error("System initializing... Please refresh and try again.")
     return None
 
-def get_avatar_initials(name):
-    parts = name.split()
-    if len(parts) >= 2:
-        return (parts[0][0] + parts[1][0]).upper()
-    return name[:2].upper()
+def lookup_user(email):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT username, full_name FROM users WHERE username = ?", (email,))
+        user = cursor.fetchone()
+        conn.close()
+        return dict(user) if user else None
+    except Exception:
+        return None
+
+def register_user(full_name, email, password, role):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM users WHERE username = ?", (email,))
+        if cursor.fetchone()[0] > 0:
+            conn.close()
+            return None, "An account with this email already exists."
+        cursor.execute(
+            "INSERT INTO users (username, password_hash, role, full_name) VALUES (?, ?, ?, ?)",
+            (email, hash_password(password), role, full_name)
+        )
+        conn.commit()
+        user_id = cursor.lastrowid
+        conn.close()
+        return {
+            "id": user_id,
+            "username": email,
+            "role": role,
+            "full_name": full_name,
+        }, None
+    except Exception as e:
+        return None, str(e)
 
 def render_login_page():
     col1, col2, col3 = st.columns([1, 1.4, 1])
@@ -77,7 +95,7 @@ def render_login_page():
         <div style="background: white; border-radius: 24px; padding: 48px 40px;
              box-shadow: 0 12px 60px rgba(197, 165, 90, 0.12);
              border: 1px solid #E8D5A3;
-             animation: fadeInUp 0.6s ease-out; margin-top: 40px;">
+             animation: fadeInUp 0.6s ease-out; margin-top: 30px;">
             <div style="text-align:center; margin-bottom: 32px;">
                 <div style="font-size:2.2rem; margin-bottom:4px;">📊</div>
                 <h2 style="color:#2C1810; margin: 0 0 4px; font-weight:800;
@@ -88,14 +106,13 @@ def render_login_page():
             </div>
         """, unsafe_allow_html=True)
 
-        show_email_form = st.session_state.get("show_email_login", False)
+        page = st.session_state.get("login_page", "main")
 
-        if not show_email_form:
-            users = get_all_users()
-            st.markdown("<p style='text-align:center; font-size:0.85rem; color:#5D4037; font-weight:500; margin-bottom:20px;'>Sign in to your account</p>", unsafe_allow_html=True)
+        if page == "main":
+            st.markdown("<p style='text-align:center; font-size:0.85rem; color:#5D4037; font-weight:500; margin-bottom:24px;'>Sign in to your account</p>", unsafe_allow_html=True)
 
             st.markdown("""
-            <button id="google-btn" onclick=""
+            <button id="google-btn"
                 style="width:100%; padding:12px; border-radius:12px; border:1.5px solid #E0D5C0;
                        background:white; cursor:pointer; font-family:Inter,sans-serif;
                        font-size:0.95rem; font-weight:500; color:#2C1810;
@@ -105,63 +122,115 @@ def render_login_page():
                 Sign in with Google
             </button>
             <style>
-                #google-btn:hover { border-color: #C5A55A !important; box-shadow: 0 4px 12px rgba(197,165,90,0.15) !important; }
+                #google-btn { cursor: default; }
             </style>
             """, unsafe_allow_html=True)
 
-            if users:
-                st.markdown("<p style='text-align:center; font-size:0.75rem; color:#8C7A6B; margin: 4px 0 16px;'>Choose a Google account to continue</p>", unsafe_allow_html=True)
-                avatar_colors = ["#4285F4", "#EA4335", "#FBBC05", "#34A853", "#FF6D01", "#46BDC6"]
-                for i, u in enumerate(users):
-                    initials = get_avatar_initials(u['full_name'])
-                    color = avatar_colors[i % len(avatar_colors)]
-                    col_a, col_b = st.columns([1, 5])
-                    with col_a:
-                        st.markdown(f"""
-                        <div style="width:40px; height:40px; border-radius:50%;
-                            background:{color}; display:flex; align-items:center; justify-content:center;
-                            font-size:0.9rem; font-weight:600; color:white; margin:auto;">
-                            {initials}
-                        </div>
-                        """, unsafe_allow_html=True)
-                    with col_b:
-                        if st.button(f"**{u['full_name']}**  \n{u['username']}@resto.com", key=f"google_{u['username']}", use_container_width=True):
-                            conn = get_db_connection()
-                            cursor = conn.cursor()
-                            cursor.execute("SELECT id, username, role, full_name FROM users WHERE username = ?", (u['username'],))
-                            user = cursor.fetchone()
-                            conn.close()
-                            if user:
-                                st.session_state.user = {
-                                    "id": user["id"],
-                                    "username": user["username"],
-                                    "role": user["role"],
-                                    "full_name": user["full_name"],
-                                }
-                                st.rerun()
+            if st.button("Continue with Google", key="google_continue", type="primary", use_container_width=True):
+                st.session_state.login_page = "google_email"
+                st.rerun()
 
             st.markdown("<div style='display:flex; align-items:center; margin:20px 0;'><div style='flex:1; height:1px; background:#E8D5A3;'></div><div style='padding:0 12px; color:#8C7A6B; font-size:0.8rem;'>or</div><div style='flex:1; height:1px; background:#E8D5A3;'></div></div>", unsafe_allow_html=True)
 
-            if st.button("Sign in with email", key="show_email_btn", use_container_width=True):
-                st.session_state.show_email_login = True
+            if st.button("Sign in with email", key="show_email", use_container_width=True):
+                st.session_state.login_page = "email_login"
                 st.rerun()
 
-        else:
-            st.markdown("<p style='text-align:center; font-size:0.85rem; color:#5D4037; font-weight:500; margin-bottom:20px;'>Sign in with your email</p>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align:center; margin-top:20px;'><a style='color:#8C7A6B; font-size:0.8rem; cursor:pointer; text-decoration:none;'>Don't have an account?</a></div>", unsafe_allow_html=True)
+            if st.button("Create an account", key="show_register", use_container_width=True):
+                st.session_state.login_page = "register"
+                st.rerun()
 
-            with st.form("login_form_main"):
-                username = st.text_input("Email", placeholder="you@resto.com", key="login_email")
-                password = st.text_input("Password", type="password", placeholder="Enter password", key="login_pass")
+        elif page == "google_email":
+            st.markdown("<p style='text-align:center; font-size:0.85rem; color:#5D4037; font-weight:500; margin-bottom:20px;'>Sign in with Google</p>", unsafe_allow_html=True)
+
+            google_email = st.text_input("Email address", placeholder="you@gmail.com", key="google_email_input", value=st.session_state.get("google_email_val", ""))
+            col_b1, col_b2 = st.columns(2)
+            with col_b1:
+                if st.button("← Back", key="google_back", use_container_width=True):
+                    st.session_state.login_page = "main"
+                    st.session_state.pop("google_email_val", None)
+                    st.rerun()
+            with col_b2:
+                if st.button("Next", key="google_next", type="primary", use_container_width=True):
+                    if google_email:
+                        user_data = lookup_user(google_email)
+                        if user_data:
+                            st.session_state.google_email_val = google_email
+                            st.session_state.google_user_data = user_data
+                            st.session_state.login_page = "google_password"
+                            st.rerun()
+                        else:
+                            st.error("No account found with this email. Please sign in with email or create an account.")
+
+        elif page == "google_password":
+            user_data = st.session_state.get("google_user_data", {})
+            initials = "".join(p[0] for p in user_data.get("full_name", "?").split()[:2]).upper()
+
+            st.markdown(f"""
+            <div style="text-align:center; margin-bottom:24px;">
+                <div style="width:56px; height:56px; border-radius:50%; background:#4285F4;
+                    display:flex; align-items:center; justify-content:center; font-size:1.2rem;
+                    font-weight:600; color:white; margin:0 auto 8px;">{initials}</div>
+                <div style="font-weight:600; color:#2C1810;">{user_data.get('full_name', '')}</div>
+                <div style="font-size:0.8rem; color:#8C7A6B;">{user_data.get('username', '')}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            google_pass = st.text_input("Password", type="password", placeholder="Enter your password", key="google_pass_input")
+            col_b1, col_b2 = st.columns(2)
+            with col_b1:
+                if st.button("← Back", key="google_pass_back", use_container_width=True):
+                    st.session_state.login_page = "google_email"
+                    st.rerun()
+            with col_b2:
+                if st.button("Sign In", key="google_signin", type="primary", use_container_width=True):
+                    user = authenticate(user_data.get("username", ""), google_pass)
+                    if user:
+                        st.session_state.user = user
+                        st.rerun()
+                    else:
+                        st.error("Incorrect password. Try again.")
+
+        elif page == "email_login":
+            st.markdown("<p style='text-align:center; font-size:0.85rem; color:#5D4037; font-weight:500; margin-bottom:20px;'>Sign in with email</p>", unsafe_allow_html=True)
+
+            with st.form("login_form_email"):
+                email = st.text_input("Email", placeholder="you@resto.com", key="login_email")
+                password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_pass")
                 if st.form_submit_button("🚀 Sign In", type="primary", use_container_width=True):
-                    user = authenticate(username, password)
+                    user = authenticate(email, password)
                     if user:
                         st.session_state.user = user
                         st.rerun()
                     else:
                         st.error("Invalid email or password.")
 
-            if st.button("← Back to Google sign-in", key="back_google_btn", use_container_width=True):
-                st.session_state.show_email_login = False
+            if st.button("← Back", key="email_back", use_container_width=True):
+                st.session_state.login_page = "main"
+                st.rerun()
+
+        elif page == "register":
+            st.markdown("<p style='text-align:center; font-size:0.85rem; color:#5D4037; font-weight:500; margin-bottom:20px;'>Create your account</p>", unsafe_allow_html=True)
+
+            with st.form("register_form"):
+                full_name = st.text_input("Full name", placeholder="John Doe", key="reg_name")
+                reg_email = st.text_input("Email", placeholder="you@resto.com", key="reg_email")
+                reg_pass = st.text_input("Password", type="password", placeholder="Create a password", key="reg_pass")
+                reg_role = st.selectbox("Role", ["staff", "admin", "kitchen", "customer"], key="reg_role")
+                if st.form_submit_button("Create Account", type="primary", use_container_width=True):
+                    if full_name and reg_email and reg_pass:
+                        user, err = register_user(full_name, reg_email, reg_pass, reg_role)
+                        if user:
+                            st.session_state.user = user
+                            st.rerun()
+                        else:
+                            st.error(err)
+                    else:
+                        st.error("Please fill in all fields.")
+
+            if st.button("← Back to sign in", key="reg_back", use_container_width=True):
+                st.session_state.login_page = "main"
                 st.rerun()
 
         st.markdown("""
@@ -179,8 +248,8 @@ def get_current_user():
 user = get_current_user()
 
 if not user:
-    if "show_email_login" not in st.session_state:
-        st.session_state.show_email_login = False
+    if "login_page" not in st.session_state:
+        st.session_state.login_page = "main"
     render_login_page()
     st.stop()
 
