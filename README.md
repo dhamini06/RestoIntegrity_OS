@@ -4,7 +4,21 @@
 
 Built for **VibeAthon 6.0 (2K26) Hackathon** under **Team VibeGuard**.
 
-RestoIntegrity OS is a modern restaurant management platform that gives owners real-time visibility into what's actually happening in their business — sales performance, inventory health, staff tip tracking, and AI-powered operational insights. Run smarter, waste less, earn more.
+> **Team Lead:** K. Dhamini · **Email:** dhamini467@gmail.com
+>
+> **Phases Completed:** 4 / 5
+
+---
+
+## 🏆 Progress — 4/5 Phases Complete
+
+| Phase | Status | Description |
+|-------|--------|-------------|
+| **Phase 1: Foundation** | ✅ Complete | Database schema, user auth, seed data with realistic transactions |
+| **Phase 2: Customer Experience** | ✅ Complete | Digital menu, QR ordering, cart with tips, AI upsell recommendations |
+| **Phase 3: Kitchen Operations** | ✅ Complete | Live ticket pipeline, stock deduction on completion, void restore |
+| **Phase 4: Manager Intelligence** | ✅ Complete | Operations dashboard, revenue analytics, item performance, time patterns, tip tracking, AI Business Advisor, predictive stock forecasting, live operations feed |
+| **Phase 5: Deployment & Polish** | 🔄 In Progress | Streamlit Cloud deployment, theme polish, bug fixes |
 
 ---
 
@@ -28,7 +42,8 @@ Most restaurant POS systems show you what happened yesterday. RestoIntegrity OS 
 
 ### Manager Intelligence
 * **📊 Operations Command Center**: Single dashboard with revenue metrics, order trends, cancellation rates, and inventory health.
-* **📈 Revenue Analytics**: Sales breakdowns by time period, item popularity, and staff performance.
+* **📈 Revenue Analytics**: Sales breakdowns by time period, item popularity (best/worst sellers), and staff performance.
+* **⏰ Time Pattern Analysis**: Hourly heatmaps, peak hour detection, day-of-week trends to optimize staffing.
 * **💰 Tip & Staff Tracking**: Per-waiter tip earnings, average tip percentages, and payment method breakdowns.
 * **📋 Live Operations Feed**: Real-time alerts for high cancellation rates, unusual discount patterns, and stock depletion warnings.
 * **🔮 Predictive Stock Forecasting**: AI-powered estimates for when ingredients will run out based on sales velocity.
@@ -38,7 +53,7 @@ Most restaurant POS systems show you what happened yesterday. RestoIntegrity OS 
 
 ## 🛠️ Tech Stack
 
-* **Frontend**: Streamlit with custom CSS — bright gradient theme, Poppins font, glassmorphism panels.
+* **Frontend**: Streamlit with luxury white & gold theme — Playfair Display serif headings, Inter body font.
 * **Database**: SQLite — zero-config, pre-populated with realistic multi-day transaction data.
 * **AI Engine**: Google Gemini API (`gemini-2.5-flash`) for operational insights, stock forecasting, and smart recommendations.
 * **Hosting**: Streamlit Community Cloud (free, instant GitHub sync).
@@ -83,5 +98,12 @@ Open `http://localhost:8501` in your browser.
 
 ---
 
+## 📸 Screenshots
+
+*(Add screenshots here)*
+
+---
+
 ## 🔗 Live Demo
-*[Enter hosted URL after deployment]*
+
+**https://restointegrityos-copcp7vrmntkfjrhabjb9u.streamlit.app/**

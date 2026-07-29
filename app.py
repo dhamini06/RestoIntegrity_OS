@@ -1,8 +1,9 @@
 import streamlit as st
 import os
 import hashlib
+import sqlite3
 from database import get_db_connection, init_db, migrate_db
-from mock_data import seed_db
+from mock_data import seed_db, _hash
 from components.ui_helpers import inject_custom_css
 from components.customer_view import render_customer_view
 from components.kitchen_view import render_kitchen_view
@@ -23,14 +24,18 @@ inject_custom_css()
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-def login_form():
-    st.sidebar.markdown("<h3 style='color:#5D4037; font-family:Playfair Display, serif;'>🔐 Sign In</h3>", unsafe_allow_html=True)
-    username = st.sidebar.text_input("Username", key="login_user", placeholder="Username")
-    password = st.sidebar.text_input("Password", type="password", key="login_pass", placeholder="Password")
-
-    if st.sidebar.button("🚀 Sign In", key="login_btn", type="primary", use_container_width=True):
+def authenticate(username, password):
+    try:
         conn = get_db_connection()
         cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) as cnt FROM users")
+        if cursor.fetchone()["cnt"] == 0:
+            conn.close()
+            init_db()
+            migrate_db()
+            seed_db()
+            conn = get_db_connection()
+            cursor = conn.cursor()
         cursor.execute(
             "SELECT id, username, role, full_name FROM users WHERE username = ? AND password_hash = ?",
             (username, hash_password(password))
@@ -38,12 +43,25 @@ def login_form():
         user = cursor.fetchone()
         conn.close()
         if user:
-            st.session_state.user = {
+            return {
                 "id": user["id"],
                 "username": user["username"],
                 "role": user["role"],
                 "full_name": user["full_name"],
             }
+    except Exception as e:
+        st.error(f"System initializing... Please refresh and try again.")
+    return None
+
+def login_form():
+    st.sidebar.markdown("<h3 style='color:#5D4037; font-family:Playfair Display, serif;'>🔐 Sign In</h3>", unsafe_allow_html=True)
+    username = st.sidebar.text_input("Username", key="login_user", placeholder="Username")
+    password = st.sidebar.text_input("Password", type="password", key="login_pass", placeholder="Password")
+
+    if st.sidebar.button("🚀 Sign In", key="login_btn", type="primary", use_container_width=True):
+        user = authenticate(username, password)
+        if user:
+            st.session_state.user = user
             st.rerun()
         else:
             st.sidebar.error("Invalid credentials. Try again!")
@@ -79,21 +97,9 @@ def login_form_main():
             username = st.text_input("Username", placeholder="Username", key="login_user_main")
             password = st.text_input("Password", type="password", placeholder="Password", key="login_pass_main")
             if st.form_submit_button("🚀 Sign In", type="primary", use_container_width=True):
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                cursor.execute(
-                    "SELECT id, username, role, full_name FROM users WHERE username = ? AND password_hash = ?",
-                    (username, hash_password(password))
-                )
-                user = cursor.fetchone()
-                conn.close()
+                user = authenticate(username, password)
                 if user:
-                    st.session_state.user = {
-                        "id": user["id"],
-                        "username": user["username"],
-                        "role": user["role"],
-                        "full_name": user["full_name"],
-                    }
+                    st.session_state.user = user
                     st.rerun()
                 else:
                     st.error("Invalid credentials. Try again!")
