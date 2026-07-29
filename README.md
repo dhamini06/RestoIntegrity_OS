@@ -87,14 +87,25 @@ streamlit run app.py
 Open `http://localhost:8501` in your browser.
 
 ### Demo Credentials
-| Username | Password | Role |
-|----------|----------|------|
-| admin | admin123 | Manager |
-| alice | alice123 | Server |
-| bob | bob123 | Server |
-| charlie | charlie123 | Server |
-| chef_ramsay | chef123 | Kitchen |
-| guest | guest123 | Customer |
+| Username | Password | Role | Access |
+|----------|----------|------|--------|
+| admin | admin123 | **admin** | Full access — Manager Dashboard, Customer Menu, Kitchen View |
+| alice | alice123 | **staff** | Waiter — Customer Menu, Kitchen View |
+| bob | bob123 | **staff** | Waiter — Customer Menu, Kitchen View |
+| charlie | charlie123 | **staff** | Waiter — Customer Menu, Kitchen View |
+| chef_ramsay | chef123 | **kitchen** | Kitchen View only |
+| guest | guest123 | **customer** | Customer Menu only |
+
+---
+
+## 👥 Roles & Permissions
+
+| Role | Access | Description |
+|------|--------|-------------|
+| **admin** | 📊 Manager Dashboard · 📱 Customer Menu · 👨‍🍳 Kitchen View | Full control. Views all analytics, alerts, AI insights, inventory, staff tips, and time patterns. Can simulate operational scenarios. Can configure Gemini API key. |
+| **staff** (waiter) | 📱 Customer Menu · 👨‍🍳 Kitchen View | Can place and manage customer orders. Can view kitchen ticket pipeline to track order status. |
+| **kitchen** (chef) | 👨‍🍳 Kitchen View | Sees the live ticket pipeline — pending, preparing, completed orders with aging badges. Can mark orders as preparing/complete. |
+| **customer** (guest) | 📱 Customer Menu | Self-service digital menu. Browses items, adds to cart, customizes with tip and payment method, places orders. |
 
 ---
 
