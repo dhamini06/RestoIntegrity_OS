@@ -62,29 +62,64 @@ def login_form():
         </div>
         """, unsafe_allow_html=True)
 
+def login_form_main():
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("""
+        <div style="background: white; border-radius: 20px; padding: 36px 32px;
+             box-shadow: 0 8px 40px rgba(99,102,241,0.12); border: 1px solid #e2e8f0;
+             animation: fadeInUp 0.6s ease-out;">
+            <div style="text-align:center; margin-bottom: 24px;">
+                <div style="font-size:2.5rem;">📊</div>
+                <h2 style="color:#1e293b; margin: 8px 0 4px; font-weight:800;">RestoIntegrity OS</h2>
+                <p style="color:#64748b; font-size:0.85rem; margin:0;">Sign in to your dashboard</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+        with st.form("login_form_main"):
+            username = st.text_input("Username", placeholder="Enter username", key="login_user_main")
+            password = st.text_input("Password", type="password", placeholder="Enter password", key="login_pass_main")
+            if st.form_submit_button("🚀 Sign In", type="primary", use_container_width=True):
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT id, username, role, full_name FROM users WHERE username = ? AND password_hash = ?",
+                    (username, hash_password(password))
+                )
+                user = cursor.fetchone()
+                conn.close()
+                if user:
+                    st.session_state.user = {
+                        "id": user["id"],
+                        "username": user["username"],
+                        "role": user["role"],
+                        "full_name": user["full_name"],
+                    }
+                    st.rerun()
+                else:
+                    st.error("Invalid credentials. Try again!")
+
+        st.markdown("""
+            <div style="margin-top:20px; padding:14px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
+                <div style="font-size:0.75rem; color:#64748b; font-weight:600; margin-bottom:8px;">Demo Credentials</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.8rem; color:#1e293b;">
+                    <div><b>admin</b> / admin123</div>
+                    <div><b>alice</b> / alice123</div>
+                    <div><b>bob</b> / bob123</div>
+                    <div><b>chef_ramsay</b> / chef123</div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
 def get_current_user():
     return st.session_state.get("user", None)
 
 user = get_current_user()
 
 if not user:
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
-         padding: 50px 30px; border-radius: 24px; text-align: center;
-         margin-top: 60px; box-shadow: 0 20px 60px rgba(99,102,241,0.3);
-         animation: fadeInUp 0.8s ease-out;">
-        <h1 style="color: white; font-size: 3rem; font-weight: 900; margin: 0; letter-spacing: -0.03em;">
-            📊 RestoIntegrity OS
-        </h1>
-        <p style="color: rgba(255,255,255,0.9); font-size: 1.2rem; margin-top: 10px; font-weight: 400;">
-            AI-Powered Smart Restaurant Operations Platform
-        </p>
-        <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-top: 20px;">
-            Sign in using the sidebar to access your dashboard
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
     login_form()
+    login_form_main()
     st.stop()
 
 login_form()
