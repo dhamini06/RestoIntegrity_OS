@@ -9,13 +9,13 @@ from database import get_db_connection
 from integrity_engine import check_void_anomaly, check_discount_anomaly, check_shrinkage_anomaly
 from gemini_service import get_demand_forecast, ask_manager_assistant
 
+AXIS_STYLE = dict(gridcolor='rgba(255,255,255,0.04)', zerolinecolor='rgba(255,255,255,0.04)')
+
 DARK_TEMPLATE = dict(
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
     font_family='Manrope, sans-serif',
     font_color='#A1A1AA',
-    xaxis=dict(gridcolor='rgba(255,255,255,0.04)', zerolinecolor='rgba(255,255,255,0.04)'),
-    yaxis=dict(gridcolor='rgba(255,255,255,0.04)', zerolinecolor='rgba(255,255,255,0.04)'),
     hovermode='x unified',
     hoverlabel=dict(bgcolor='#1F1F23', font_color='#FAFAFA', font_family='Manrope', font_size=12),
     margin=dict(l=0, r=0, t=40, b=0),
@@ -252,8 +252,8 @@ def render_analytics():
                      template='plotly_dark')
         fig.update_traces(marker_color=GOLD, marker_line_color='rgba(201,168,106,0.3)', marker_line_width=1,
                           hovertemplate='<b>%{x}</b><br>Revenue: $%{y:,.2f}<extra></extra>')
-        fig.update_layout(**DARK_TEMPLATE, xaxis=dict(**DARK_TEMPLATE['xaxis'], dtick=1),
-                          yaxis=dict(**DARK_TEMPLATE['yaxis'], tickprefix='$'))
+        fig.update_layout(**DARK_TEMPLATE, xaxis=dict(**AXIS_STYLE, dtick=1),
+                          yaxis=dict(**AXIS_STYLE, tickprefix='$'))
         st.plotly_chart(fig, use_container_width=True)
 
     cursor.execute("""
@@ -380,7 +380,7 @@ def render_analytics():
                               else '#D4B47A' for v in hourly_counts['orders']],
                 hovertemplate='<b>%{x}:00</b><br>Orders: %{y}<extra></extra>'
             )
-            fig_hourly.update_layout(**DARK_TEMPLATE, xaxis=dict(**DARK_TEMPLATE['xaxis'], dtick=2))
+            fig_hourly.update_layout(**DARK_TEMPLATE, xaxis=dict(**AXIS_STYLE, dtick=2))
             st.plotly_chart(fig_hourly, use_container_width=True)
 
         peak_hour = int(hourly_counts.loc[hourly_counts['orders'].idxmax(), 'hour'])
