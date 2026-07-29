@@ -620,9 +620,9 @@ def check_low_stock_alerts():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT item_name, current_quantity, min_threshold, unit FROM inventory WHERE current_quantity <= min_threshold")
-    low_items = cursor.fetchall()
+    low_items = [dict(row) for row in cursor.fetchall()]
     if low_items:
-        items_str = ", ".join([f"**{i['item_name']}** ({i['current_quantity']}{i['unit']})" for i in low_items])
+        items_str = ", ".join([f"**{i['item_name']}** ({i['current_quantity']}{i.get('unit', '')})" for i in low_items])
         st.warning(f"Low stock alert: {items_str}")
     conn.close()
 
