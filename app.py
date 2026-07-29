@@ -24,6 +24,17 @@ inject_custom_css()
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
+def get_all_users():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT username, full_name, role FROM users")
+        users = [dict(r) for r in cursor.fetchall()]
+        conn.close()
+        return users
+    except Exception:
+        return []
+
 def authenticate(username, password):
     try:
         conn = get_db_connection()
@@ -50,70 +61,115 @@ def authenticate(username, password):
                 "full_name": user["full_name"],
             }
     except Exception as e:
-        st.error(f"System initializing... Please refresh and try again.")
+        st.error("System initializing... Please refresh and try again.")
     return None
 
-def login_form():
-    st.sidebar.markdown("<h3 style='color:#5D4037; font-family:Playfair Display, serif;'>🔐 Sign In</h3>", unsafe_allow_html=True)
-    username = st.sidebar.text_input("Username", key="login_user", placeholder="Username")
-    password = st.sidebar.text_input("Password", type="password", key="login_pass", placeholder="Password")
+def get_avatar_initials(name):
+    parts = name.split()
+    if len(parts) >= 2:
+        return (parts[0][0] + parts[1][0]).upper()
+    return name[:2].upper()
 
-    if st.sidebar.button("🚀 Sign In", key="login_btn", type="primary", use_container_width=True):
-        user = authenticate(username, password)
-        if user:
-            st.session_state.user = user
-            st.rerun()
-        else:
-            st.sidebar.error("Invalid credentials. Try again!")
-
-    if "user" not in st.session_state:
-        st.sidebar.markdown("""
-        <div style="background: #F8F3E9; border-radius: 12px; padding: 14px; margin-top: 16px; border: 1px solid #E8D5A3;">
-            <div style="font-size:0.75rem; color:#8C7A6B; font-weight:600; margin-bottom:6px;">Demo Credentials</div>
-            <div style="font-size:0.8rem; color:#5D4037; line-height:1.6;">
-                <b>admin</b> / admin123<br>
-                <b>alice</b> / alice123<br>
-                <b>bob</b> / bob123<br>
-                <b>chef_ramsay</b> / chef123
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-def login_form_main():
-    col1, col2, col3 = st.columns([1, 2, 1])
+def render_login_page():
+    col1, col2, col3 = st.columns([1, 1.4, 1])
     with col2:
         st.markdown("""
-        <div style="background: white; border-radius: 20px; padding: 40px 36px;
-             box-shadow: 0 8px 40px rgba(197, 165, 90, 0.12); border: 1px solid #E8D5A3;
-             animation: fadeInUp 0.6s ease-out;">
-            <div style="text-align:center; margin-bottom: 24px;">
-                <div style="font-size:2.5rem;">📊</div>
-                <h2 style="color:#2C1810; margin: 8px 0 4px; font-weight:800; font-family:Playfair Display, serif;">RestoIntegrity OS</h2>
-                <p style="color:#8C7A6B; font-size:0.85rem; margin:0; font-family:Inter, sans-serif;">Sign in to your dashboard</p>
+        <div style="background: white; border-radius: 24px; padding: 48px 40px;
+             box-shadow: 0 12px 60px rgba(197, 165, 90, 0.12);
+             border: 1px solid #E8D5A3;
+             animation: fadeInUp 0.6s ease-out; margin-top: 40px;">
+            <div style="text-align:center; margin-bottom: 32px;">
+                <div style="font-size:2.2rem; margin-bottom:4px;">📊</div>
+                <h2 style="color:#2C1810; margin: 0 0 4px; font-weight:800;
+                    font-family:Playfair Display, serif; font-size:1.6rem;">RestoIntegrity OS</h2>
+                <p style="color:#8C7A6B; font-size:0.85rem; margin:0; font-family:Inter, sans-serif;">
+                    AI-Powered Restaurant Operations
+                </p>
             </div>
         """, unsafe_allow_html=True)
 
-        with st.form("login_form_main"):
-            username = st.text_input("Username", placeholder="Username", key="login_user_main")
-            password = st.text_input("Password", type="password", placeholder="Password", key="login_pass_main")
-            if st.form_submit_button("🚀 Sign In", type="primary", use_container_width=True):
-                user = authenticate(username, password)
-                if user:
-                    st.session_state.user = user
-                    st.rerun()
-                else:
-                    st.error("Invalid credentials. Try again!")
+        show_email_form = st.session_state.get("show_email_login", False)
+
+        if not show_email_form:
+            users = get_all_users()
+            st.markdown("<p style='text-align:center; font-size:0.85rem; color:#5D4037; font-weight:500; margin-bottom:20px;'>Sign in to your account</p>", unsafe_allow_html=True)
+
+            st.markdown("""
+            <button id="google-btn" onclick=""
+                style="width:100%; padding:12px; border-radius:12px; border:1.5px solid #E0D5C0;
+                       background:white; cursor:pointer; font-family:Inter,sans-serif;
+                       font-size:0.95rem; font-weight:500; color:#2C1810;
+                       display:flex; align-items:center; justify-content:center; gap:10px;
+                       transition:all 0.2s; margin-bottom:16px;">
+                <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/><path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.32-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.68 28.18C11.18 26.68 10.9 25.08 10.9 23.5s.28-3.18.78-4.68v-5.7H4.34C2.58 16.15 1.5 19.7 1.5 23.5s1.08 7.35 2.84 10.18l7.34-5.5z"/><path fill="#EA4335" d="M24 10.25c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 3.87 29.93 2 24 2 15.4 2 7.96 6.93 4.34 13.32l7.34 5.5C13.42 14.12 18.27 10.25 24 10.25z"/></svg>
+                Sign in with Google
+            </button>
+            <style>
+                #google-btn:hover { border-color: #C5A55A !important; box-shadow: 0 4px 12px rgba(197,165,90,0.15) !important; }
+            </style>
+            """, unsafe_allow_html=True)
+
+            if users:
+                st.markdown("<p style='text-align:center; font-size:0.75rem; color:#8C7A6B; margin: 4px 0 16px;'>Choose a Google account to continue</p>", unsafe_allow_html=True)
+                avatar_colors = ["#4285F4", "#EA4335", "#FBBC05", "#34A853", "#FF6D01", "#46BDC6"]
+                for i, u in enumerate(users):
+                    initials = get_avatar_initials(u['full_name'])
+                    color = avatar_colors[i % len(avatar_colors)]
+                    col_a, col_b = st.columns([1, 5])
+                    with col_a:
+                        st.markdown(f"""
+                        <div style="width:40px; height:40px; border-radius:50%;
+                            background:{color}; display:flex; align-items:center; justify-content:center;
+                            font-size:0.9rem; font-weight:600; color:white; margin:auto;">
+                            {initials}
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with col_b:
+                        if st.button(f"**{u['full_name']}**  \n{u['username']}@resto.com", key=f"google_{u['username']}", use_container_width=True):
+                            conn = get_db_connection()
+                            cursor = conn.cursor()
+                            cursor.execute("SELECT id, username, role, full_name FROM users WHERE username = ?", (u['username'],))
+                            user = cursor.fetchone()
+                            conn.close()
+                            if user:
+                                st.session_state.user = {
+                                    "id": user["id"],
+                                    "username": user["username"],
+                                    "role": user["role"],
+                                    "full_name": user["full_name"],
+                                }
+                                st.rerun()
+
+            st.markdown("<div style='display:flex; align-items:center; margin:20px 0;'><div style='flex:1; height:1px; background:#E8D5A3;'></div><div style='padding:0 12px; color:#8C7A6B; font-size:0.8rem;'>or</div><div style='flex:1; height:1px; background:#E8D5A3;'></div></div>", unsafe_allow_html=True)
+
+            if st.button("Sign in with email", key="show_email_btn", use_container_width=True):
+                st.session_state.show_email_login = True
+                st.rerun()
+
+        else:
+            st.markdown("<p style='text-align:center; font-size:0.85rem; color:#5D4037; font-weight:500; margin-bottom:20px;'>Sign in with your email</p>", unsafe_allow_html=True)
+
+            with st.form("login_form_main"):
+                username = st.text_input("Email", placeholder="you@resto.com", key="login_email")
+                password = st.text_input("Password", type="password", placeholder="Enter password", key="login_pass")
+                if st.form_submit_button("🚀 Sign In", type="primary", use_container_width=True):
+                    user = authenticate(username, password)
+                    if user:
+                        st.session_state.user = user
+                        st.rerun()
+                    else:
+                        st.error("Invalid email or password.")
+
+            if st.button("← Back to Google sign-in", key="back_google_btn", use_container_width=True):
+                st.session_state.show_email_login = False
+                st.rerun()
 
         st.markdown("""
-            <div style="margin-top:20px; padding:14px; background:#F8F3E9; border-radius:12px; border:1px solid #E8D5A3;">
-                <div style="font-size:0.75rem; color:#8C7A6B; font-weight:600; margin-bottom:8px;">Demo Credentials</div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.85rem; color:#5D4037;">
-                    <div><b>admin</b> / admin123</div>
-                    <div><b>alice</b> / alice123</div>
-                    <div><b>bob</b> / bob123</div>
-                    <div><b>chef_ramsay</b> / chef123</div>
-                </div>
-            </div>
+        <div style="text-align:center; margin-top:24px;">
+            <p style="font-size:0.75rem; color:#8C7A6B; margin:0;">
+                By signing in, you agree to our Terms and Privacy Policy.
+            </p>
+        </div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -123,11 +179,10 @@ def get_current_user():
 user = get_current_user()
 
 if not user:
-    login_form()
-    login_form_main()
+    if "show_email_login" not in st.session_state:
+        st.session_state.show_email_login = False
+    render_login_page()
     st.stop()
-
-login_form()
 
 if "user" in st.session_state and st.sidebar.button("🚪 Sign Out", key="logout_btn", use_container_width=True):
     st.session_state.pop("user", None)
