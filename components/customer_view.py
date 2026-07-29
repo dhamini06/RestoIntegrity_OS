@@ -5,8 +5,8 @@ from gemini_service import get_menu_recommendations
 from datetime import datetime
 
 def render_customer_view(user):
-    st.markdown("<h2 class='glow-indigo'>📱 Scan-to-Order Digital Menu</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color:#64748b;'>Real-time availability, smart pairings, and seamless checkout.</p>", unsafe_allow_html=True)
+    st.markdown("<h2 style='font-weight:700; color:#FAFAFA; font-size:1.4rem; margin-bottom:4px;'>Scan-to-Order Digital Menu</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#71717A; font-size:0.85rem; margin-bottom:20px;'>Real-time availability, smart pairings, and seamless checkout.</p>", unsafe_allow_html=True)
 
     if "cart" not in st.session_state:
         st.session_state.cart = {}
@@ -17,11 +17,16 @@ def render_customer_view(user):
     col_t1, col_t2 = st.columns([1, 3])
     with col_t1:
         st.session_state.table_number = st.selectbox(
-            "📍 Bound Table:",
+            "Table",
             ["Table 1", "Table 2", "Table 3", "Table 4", "Table 5"]
         )
     with col_t2:
-        st.info(f"Connected to: **{st.session_state.table_number}**")
+        st.markdown(f"""
+        <div class='glass-card-subtle' style='padding:8px 16px; display:inline-block;'>
+            <span style='color:#71717A; font-size:0.82rem;'>Connected to: </span>
+            <span style='color:#C9A86A; font-weight:600; font-size:0.85rem;'>{st.session_state.table_number}</span>
+        </div>
+        """, unsafe_allow_html=True)
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -47,30 +52,30 @@ def render_customer_view(user):
                 stock = item['stock_level']
                 available = item['is_available'] == 1 and stock > 0
 
-                st.markdown(f"---")
-                col_info, col_qty, col_act = st.columns([4, 1, 1])
+                st.markdown(f"""
+                <div class="glass-card" style="padding:16px; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="flex:1;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <strong style="color:#FAFAFA; font-size:0.95rem;">{name}</strong>
+                            <span style="color:#C9A86A; font-weight:700; font-size:0.95rem;">${price:.2f}</span>
+                        </div>
+                        <p style="color:#71717A; font-size:0.8rem; margin:4px 0 0;">{desc}</p>
+                        <div style="margin-top:6px;">""", unsafe_allow_html=True)
+                if not available:
+                    st.markdown("<span class='badge badge-critical'>Sold Out</span>", unsafe_allow_html=True)
+                elif stock <= 5:
+                    st.markdown(f"<span class='badge badge-medium'>Only {stock} Left</span>", unsafe_allow_html=True)
+                else:
+                    st.markdown(f"<span class='badge badge-low'>In Stock ({stock})</span>", unsafe_allow_html=True)
+                st.markdown("</div></div>", unsafe_allow_html=True)
 
-                with col_info:
-                    st.markdown(f"**{name}** — **${price:.2f}**")
-                    st.markdown(f"<small style='color:#94a3b8;'>{desc}</small>", unsafe_allow_html=True)
-                    if not available:
-                        st.markdown("<span class='badge badge-critical'>Sold Out</span>", unsafe_allow_html=True)
-                    elif stock <= 5:
-                        st.markdown(f"<span class='badge badge-medium'>Only {stock} Left</span>", unsafe_allow_html=True)
-                    else:
-                        st.markdown(f"<span class='badge badge-low'>In Stock ({stock})</span>", unsafe_allow_html=True)
-
-                with col_qty:
-                    if available:
+                if available:
+                    c_qty, c_add = st.columns([1, 1])
+                    with c_qty:
                         st.number_input("Qty", min_value=1, max_value=stock, value=1,
                                         key=f"qty_{item_id}", label_visibility="collapsed")
-                    else:
-                        st.number_input("Qty", min_value=0, max_value=0, value=0,
-                                        key=f"qty_{item_id}", disabled=True, label_visibility="collapsed")
-
-                with col_act:
-                    if available:
-                        if st.button(f"Add", key=f"add_{item_id}", use_container_width=True):
+                    with c_add:
+                        if st.button("Add", key=f"add_{item_id}", use_container_width=True):
                             qty_val = st.session_state.get(f"qty_{item_id}", 1)
                             if item_id in st.session_state.cart:
                                 new_qty = st.session_state.cart[item_id] + qty_val
@@ -81,13 +86,19 @@ def render_customer_view(user):
                             else:
                                 st.session_state.cart[item_id] = qty_val
                             st.rerun()
-                    else:
-                        st.button("Add", key=f"add_{item_id}", disabled=True, use_container_width=True)
 
-    # --- Sidebar Cart ---
-    st.sidebar.markdown("<h3 class='glow-pink'>🛒 Your Order</h3>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"""
+    <div style="background: #1F1F23; border-radius: 16px; padding: 16px; margin: 0 0 16px 0;
+        border: 1px solid rgba(255,255,255,0.06);">
+        <div style="font-size:0.85rem; font-weight:600; color:#FAFAFA; letter-spacing:0.01em;">
+            Your Order
+        </div>
+        <div style="font-size:0.75rem; color:#71717A; margin-top:2px;">{st.session_state.table_number}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
     if not st.session_state.cart:
-        st.sidebar.markdown("<p style='color:#94a3b8;'>Cart is empty. Add items from the menu!</p>", unsafe_allow_html=True)
+        st.sidebar.markdown("<p style='color:#71717A; font-size:0.82rem; text-align:center; padding:20px 0;'>Cart is empty. Add items from the menu.</p>", unsafe_allow_html=True)
     else:
         cart_total = 0.0
         items_in_cart_objects = []
@@ -101,83 +112,97 @@ def render_customer_view(user):
                 cart_total += sub
                 items_in_cart_objects.append({"id": item_id, "name": name, "price": price, "qty": qty})
 
-                st.sidebar.markdown(f"**{name}** x{qty} — **${sub:.2f}**")
+                st.sidebar.markdown(f"""
+                <div style="background:#18181B; border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:10px; margin-bottom:8px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:#FAFAFA; font-size:0.85rem; font-weight:500;">{name}</span>
+                        <span style="color:#C9A86A; font-weight:600; font-size:0.85rem;">${sub:.2f}</span>
+                    </div>
+                    <div style="display:flex; gap:4px; margin-top:6px;">
+                """, unsafe_allow_html=True)
                 c1, c2, c3 = st.sidebar.columns(3)
                 with c1:
-                    if st.button("➖", key=f"sub_{item_id}", use_container_width=True):
+                    if st.button("-", key=f"sub_{item_id}", use_container_width=True):
                         st.session_state.cart[item_id] -= 1
                         if st.session_state.cart[item_id] <= 0:
                             del st.session_state.cart[item_id]
                         st.rerun()
                 with c2:
-                    if st.button("➕", key=f"plu_{item_id}", use_container_width=True):
+                    if st.button("+", key=f"plu_{item_id}", use_container_width=True):
                         if qty < item['stock_level']:
                             st.session_state.cart[item_id] += 1
                             st.rerun()
                 with c3:
-                    if st.button("❌", key=f"del_{item_id}", use_container_width=True):
+                    if st.button("x", key=f"del_{item_id}", use_container_width=True):
                         del st.session_state.cart[item_id]
                         st.rerun()
 
-        st.sidebar.markdown("---")
+        st.sidebar.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-        # AI Recommendation
-        st.sidebar.markdown("<h4 class='glow-indigo'>✨ Smart Pairing</h4>", unsafe_allow_html=True)
         rec = get_menu_recommendations(items_in_cart_objects)
         suggested_name = rec.get("suggested_item_name", "Truffle Fries")
         reason = rec.get("recommendation_reason", "A perfect complement!")
         suggested_item = next((i for i in items if i['name'] == suggested_name), None)
         if suggested_item and suggested_item['id'] not in st.session_state.cart:
-            st.sidebar.markdown(f"**Try {suggested_name}** (${suggested_item['price']:.2f})")
-            st.sidebar.markdown(f"<p style='font-size:0.82rem; color:#6366f1;'>\"{reason}\"</p>", unsafe_allow_html=True)
+            st.sidebar.markdown(f"""
+            <div style="background:rgba(201,168,106,0.04); border:1px solid rgba(201,168,106,0.1); border-radius:12px; padding:12px; margin-bottom:12px;">
+                <div style="font-size:0.75rem; color:#C9A86A; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px;">Smart Pairing</div>
+                <div style="font-size:0.85rem; color:#FAFAFA; font-weight:500;">{suggested_name} <span style="color:#C9A86A;">(${suggested_item['price']:.2f})</span></div>
+                <p style="font-size:0.78rem; color:#71717A; margin:4px 0 8px;">"{reason}"</p>
+            """, unsafe_allow_html=True)
             if st.sidebar.button("Add Suggestion", key="add_rec", use_container_width=True):
                 st.session_state.cart[suggested_item['id']] = 1
                 st.rerun()
+            st.sidebar.markdown("</div>", unsafe_allow_html=True)
 
-        st.sidebar.markdown("---")
+        st.sidebar.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-        # Clear Cart
-        if st.sidebar.button("🗑️ Clear Cart", use_container_width=True):
+        if st.sidebar.button("Clear Cart", key="clear_cart", use_container_width=True):
             st.session_state.cart = {}
             st.rerun()
 
-        # Tax, Tip, Payment
         tax_rate = 0.0875
         tax = round(cart_total * tax_rate, 2)
-        st.sidebar.markdown(f"Subtotal: **${cart_total:.2f}**")
-        st.sidebar.markdown(f"Tax (8.75%): **${tax:.2f}**")
+        st.sidebar.markdown(f"""
+        <div style="display:flex; justify-content:space-between; font-size:0.82rem; color:#71717A; margin:4px 0;">
+            <span>Subtotal</span><span style="color:#A1A1AA;">${cart_total:.2f}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.82rem; color:#71717A; margin:4px 0;">
+            <span>Tax (8.75%)</span><span style="color:#A1A1AA;">${tax:.2f}</span>
+        </div>
+        """, unsafe_allow_html=True)
 
-        tip_pct = st.sidebar.slider("💬 Tip %", 0, 30, 20, key="tip_slider")
+        tip_pct = st.sidebar.slider("Tip %", 0, 30, 20, key="tip_slider")
         tip = round(cart_total * tip_pct / 100, 2)
-        st.sidebar.markdown(f"Tip ({tip_pct}%): **${tip:.2f}**")
+        st.sidebar.markdown(f"""
+        <div style="display:flex; justify-content:space-between; font-size:0.82rem; color:#71717A; margin:4px 0;">
+            <span>Tip ({tip_pct}%)</span><span style="color:#A1A1AA;">${tip:.2f}</span>
+        </div>
+        """, unsafe_allow_html=True)
 
         grand_total = cart_total + tax + tip
         st.sidebar.markdown(f"""
-        <div class="tip-highlight">
-            <div style="font-size:0.8rem; color:#92400e; font-weight:600;">TOTAL</div>
-            <div style="font-size:1.6rem; font-weight:800; color:#92400e;">${grand_total:.2f}</div>
+        <div style="background:#1F1F23; border:1px solid rgba(201,168,106,0.1); border-radius:14px; padding:14px; margin:12px 0; text-align:center;">
+            <div style="font-size:0.72rem; color:#71717A; font-weight:600; text-transform:uppercase; letter-spacing:0.06em;">Total</div>
+            <div style="font-size:1.6rem; font-weight:700; color:#C9A86A;">${grand_total:.2f}</div>
         </div>
         """, unsafe_allow_html=True)
 
         payment_method = st.sidebar.radio(
-            "💳 Payment:", ["Cash", "Card", "Mobile Pay"],
+            "Payment", ["Cash", "Card", "Mobile Pay"],
             horizontal=True, key="pay_method"
         )
 
         if tip_pct > 0:
             st.sidebar.markdown(f"""
-            <div style="background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(6,182,212,0.08));
-                 border-radius: 12px; padding: 10px; margin: 8px 0; border: 1px solid rgba(16,185,129,0.2);
-                 text-align:center;">
-                <span style="font-size:0.85rem; color:#059669; font-weight:600;">
-                    💚 Your waiter will earn ${tip:.2f} tip!
-                </span>
+            <div style="background:rgba(34,197,94,0.04); border:1px solid rgba(34,197,94,0.1); border-radius:12px; padding:10px; text-align:center;">
+                <span style="font-size:0.78rem; color:#22C55E; font-weight:500;">Waiter earns ${tip:.2f} tip</span>
             </div>
             """, unsafe_allow_html=True)
 
-        st.sidebar.markdown("---")
+        st.sidebar.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-        if st.sidebar.button("🚀 Place Order", type="primary", use_container_width=True):
+        if st.sidebar.button("Place Order", type="primary", use_container_width=True):
             conn = get_db_connection()
             cursor = conn.cursor()
             now_str = datetime.now().isoformat()
@@ -204,34 +229,41 @@ def render_customer_view(user):
             conn.commit()
             conn.close()
 
-            # Receipt
-            receipt = f"""<div style="background: linear-gradient(135deg, #ecfdf5, #f0fdf4); border: 2px solid #10b981;
-                 border-radius: 16px; padding: 20px; margin: 10px 0;">
-                <h3 style="color:#059669; margin:0; text-align:center;">✅ Order Placed!</h3>
-                <div style="text-align:center; margin:8px 0;">
-                    <span class="badge badge-low">Order #{order_id}</span>
-                </div>
-                <div style="font-size:0.85rem; color:#1e293b; line-height:1.8; margin-top:10px;">"""
+            receipt_items = ""
             for item_id, qty in st.session_state.cart.items():
                 item = next((i for i in items if i['id'] == item_id), None)
                 if item:
-                    receipt += f"{item['name']} x{qty} — ${item['price']*qty:.2f}<br>"
-            receipt += f"""---
-                Subtotal: ${cart_total:.2f}<br>
-                Tax: ${tax:.2f}<br>
-                Tip: ${tip:.2f}<br>
-                <b>Total: ${grand_total:.2f}</b><br>
-                Payment: {payment_method}
-                </div></div>"""
-            st.sidebar.markdown(receipt, unsafe_allow_html=True)
+                    receipt_items += f"<div style='display:flex; justify-content:space-between; font-size:0.82rem; color:#A1A1AA;'><span>{item['name']} x{qty}</span><span>${item['price']*qty:.2f}</span></div>"
+
+            st.sidebar.markdown(f"""
+            <div style="background:#1F1F23; border:1px solid rgba(34,197,94,0.15); border-radius:16px; padding:20px; margin:10px 0;">
+                <div style="text-align:center; margin-bottom:12px;">
+                    <div style="width:36px; height:36px; border-radius:50%; background:rgba(34,197,94,0.1);
+                        display:flex; align-items:center; justify-content:center; margin:0 auto 8px;
+                        border:1px solid rgba(34,197,94,0.1);">
+                        <span style="color:#22C55E; font-weight:600; font-size:0.9rem;">&#10003;</span>
+                    </div>
+                    <div style="color:#22C55E; font-weight:600; font-size:0.9rem;">Order Placed</div>
+                    <span class="badge badge-low" style="margin-top:4px;">Order #{order_id}</span>
+                </div>
+                <div style="margin-top:10px;">
+                    {receipt_items}
+                    <div class='divider'></div>
+                    <div style='display:flex; justify-content:space-between; font-size:0.82rem; color:#71717A;'><span>Subtotal</span><span style='color:#A1A1AA;'>${cart_total:.2f}</span></div>
+                    <div style='display:flex; justify-content:space-between; font-size:0.82rem; color:#71717A;'><span>Tax</span><span style='color:#A1A1AA;'>${tax:.2f}</span></div>
+                    <div style='display:flex; justify-content:space-between; font-size:0.82rem; color:#71717A;'><span>Tip</span><span style='color:#A1A1AA;'>${tip:.2f}</span></div>
+                    <div style='display:flex; justify-content:space-between; font-size:0.95rem; color:#C9A86A; font-weight:700; margin-top:6px;'><span>Total</span><span>${grand_total:.2f}</span></div>
+                    <div style='font-size:0.75rem; color:#71717A; margin-top:4px;'>{payment_method}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
             st.session_state.cart = {}
-            st.toast("Kitchen is on it!", icon="🔥")
+            st.toast("Kitchen is on it!", icon=None)
             st.rerun()
 
-    # Active orders
-    st.markdown("<div style='margin-top:30px;'></div>", unsafe_allow_html=True)
-    st.markdown("### 🕒 Active Orders")
+    st.markdown("<div style='margin-top:24px;'></div>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color:#A1A1AA; font-weight:600; font-size:0.9rem; margin-bottom:12px;'>Active Orders</h3>", unsafe_allow_html=True)
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -243,7 +275,7 @@ def render_customer_view(user):
     conn.close()
 
     if not active_orders:
-        st.markdown("<p style='color:#94a3b8;'>No active orders for this table.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#71717A; font-size:0.85rem;'>No active orders for this table.</p>", unsafe_allow_html=True)
     else:
         for order in active_orders:
             o_id = order['id']
@@ -252,14 +284,14 @@ def render_customer_view(user):
             if status == 'pending':
                 badge = "<span class='badge badge-medium'>Sent to Kitchen</span>"
             elif status == 'preparing':
-                badge = "<span class='badge badge-indigo'>Preparing</span>"
+                badge = "<span class='badge badge-blue'>Preparing</span>"
             else:
                 badge = f"<span class='badge badge-low'>{status}</span>"
             st.markdown(f"""
             <div class="glass-card" style="padding:14px;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <strong>Order #{o_id}</strong>
-                    <span style="font-weight:700; color:#6366f1;">${total:.2f}</span>
+                    <strong style="color:#FAFAFA; font-size:0.85rem;">Order #{o_id}</strong>
+                    <span style="font-weight:600; color:#C9A86A;">${total:.2f}</span>
                 </div>
                 <div style="margin-top:6px;">{badge}</div>
             </div>

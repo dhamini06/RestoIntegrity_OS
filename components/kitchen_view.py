@@ -31,8 +31,8 @@ def update_order_status(order_id, status):
     conn.close()
 
 def render_kitchen_view(user):
-    st.markdown("<h2 class='glow-pink'>👨‍🍳 Kitchen Order Dispatcher</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color:#64748b;'>Manage live tickets, track cook times, and coordinate service.</p>", unsafe_allow_html=True)
+    st.markdown("<h2 style='font-weight:700; color:#FAFAFA; font-size:1.4rem; margin-bottom:4px;'>Kitchen Order Dispatcher</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#71717A; font-size:0.85rem; margin-bottom:20px;'>Manage live tickets, track cook times, and coordinate service.</p>", unsafe_allow_html=True)
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -64,9 +64,13 @@ def render_kitchen_view(user):
     if not active_orders:
         st.markdown("""
         <div class="glass-card" style="text-align:center; padding:40px;">
-            <div style="font-size:3rem;">🎉</div>
-            <h3 style="color:#10b981;">All Clear!</h3>
-            <p style="color:#64748b;">No pending orders. The kitchen is caught up.</p>
+            <div style="width:40px; height:40px; border-radius:50%; background:rgba(34,197,94,0.1);
+                display:flex; align-items:center; justify-content:center; margin:0 auto 12px;
+                border:1px solid rgba(34,197,94,0.1);">
+                <span style="color:#22C55E; font-weight:600; font-size:0.9rem;">&#10003;</span>
+            </div>
+            <h3 style="color:#22C55E; margin:0 0 4px;">All Clear</h3>
+            <p style="color:#71717A; font-size:0.85rem; margin:0;">No pending orders. The kitchen is caught up.</p>
         </div>
         """, unsafe_allow_html=True)
         return
@@ -74,10 +78,10 @@ def render_kitchen_view(user):
     col_pending, col_preparing = st.columns(2)
 
     with col_pending:
-        st.markdown("### 📥 Incoming Tickets")
+        st.markdown("<h4 style='color:#A1A1AA; font-weight:600; font-size:0.9rem; margin-bottom:16px;'>Incoming Tickets</h4>", unsafe_allow_html=True)
         pending_list = [o for o in active_orders if o['status'] == 'pending']
         if not pending_list:
-            st.markdown("<p style='color:#94a3b8;'>No incoming tickets.</p>", unsafe_allow_html=True)
+            st.markdown("<p style='color:#71717A; font-size:0.85rem;'>No incoming tickets.</p>", unsafe_allow_html=True)
         for order in pending_list:
             o_id = order['id']
             table = order['table_number']
@@ -100,18 +104,16 @@ def render_kitchen_view(user):
                 aging_label = "New"
 
             st.markdown(f"""
-            <div style="background: rgba(255,255,255,0.7); border: 1.5px solid rgba(99,102,241,0.12);
-                 border-radius: 16px; padding: 16px; margin-bottom: 12px;
-                 box-shadow: 0 4px 15px rgba(99,102,241,0.06);">
+            <div class="glass-card" style="padding:16px; margin-bottom:12px; border-left:3px solid #3B82F6;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <strong style="font-size:1rem;">Order #{o_id}</strong>
-                    <span class="badge badge-indigo">{table}</span>
+                    <strong style="color:#FAFAFA; font-size:0.9rem;">Order #{o_id}</strong>
+                    <span class="badge badge-blue">{table or 'Takeout'}</span>
                 </div>
-                <div style="margin: 8px 0; font-size:0.88rem; color:#475569;">
+                <div style="margin: 8px 0; font-size:0.85rem; color:#A1A1AA;">
                     {', '.join(items_list)}
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-                    <span style="font-size:0.75rem; color:#94a3b8;">Served by: {served}</span>
+                    <span style="font-size:0.75rem; color:#71717A;">Served by: {served}</span>
                     <span class="badge {aging_class}">{aging_label}</span>
                 </div>
             </div>
@@ -119,21 +121,21 @@ def render_kitchen_view(user):
 
             c1, c2 = st.columns(2)
             with c1:
-                if st.button("🔥 Start Cooking", key=f"cook_{o_id}", use_container_width=True):
+                if st.button("Start Cooking", key=f"cook_{o_id}", use_container_width=True):
                     update_order_status(o_id, 'preparing')
                     st.rerun()
             with c2:
-                if st.button("❌ Cancel", key=f"cancel_p_{o_id}", use_container_width=True):
+                if st.button("Cancel", key=f"cancel_p_{o_id}", use_container_width=True):
                     restore_stock(o_id)
                     update_order_status(o_id, 'voided')
                     st.warning(f"Order #{o_id} voided. Stock restored.")
                     st.rerun()
 
     with col_preparing:
-        st.markdown("### 🔥 In Preparation")
+        st.markdown("<h4 style='color:#A1A1AA; font-weight:600; font-size:0.9rem; margin-bottom:16px;'>In Preparation</h4>", unsafe_allow_html=True)
         preparing_list = [o for o in active_orders if o['status'] == 'preparing']
         if not preparing_list:
-            st.markdown("<p style='color:#94a3b8;'>Nothing cooking right now.</p>", unsafe_allow_html=True)
+            st.markdown("<p style='color:#71717A; font-size:0.85rem;'>Nothing cooking right now.</p>", unsafe_allow_html=True)
         for order in preparing_list:
             o_id = order['id']
             table = order['table_number']
@@ -152,23 +154,20 @@ def render_kitchen_view(user):
                     aging_class = "stale-badge"
                     aging_label = f"SLOW ({elapsed_min}m)"
             except Exception:
-                aging_class = "badge-indigo"
+                aging_class = "badge-low"
                 aging_label = "Cooking"
 
             st.markdown(f"""
-            <div style="background: linear-gradient(135deg, rgba(236,72,153,0.04), rgba(99,102,241,0.04));
-                 border: 1.5px solid rgba(236,72,153,0.15);
-                 border-radius: 16px; padding: 16px; margin-bottom: 12px;
-                 box-shadow: 0 4px 15px rgba(236,72,153,0.06);">
+            <div class="glass-card" style="padding:16px; margin-bottom:12px; border-left:3px solid #C9A86A;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <strong style="font-size:1rem;">Order #{o_id}</strong>
-                    <span class="badge badge-pink">{table}</span>
+                    <strong style="color:#FAFAFA; font-size:0.9rem;">Order #{o_id}</strong>
+                    <span class="badge badge-gold">{table or 'Takeout'}</span>
                 </div>
-                <div style="margin: 8px 0; font-size:0.88rem; color:#475569;">
+                <div style="margin: 8px 0; font-size:0.85rem; color:#A1A1AA;">
                     {', '.join(items_list)}
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-                    <span style="font-size:0.75rem; color:#94a3b8;">Served by: {served}</span>
+                    <span style="font-size:0.75rem; color:#71717A;">Served by: {served}</span>
                     <span class="badge {aging_class}">{aging_label}</span>
                 </div>
             </div>
@@ -176,12 +175,12 @@ def render_kitchen_view(user):
 
             c1, c2 = st.columns(2)
             with c1:
-                if st.button("✅ Serve", key=f"serve_{o_id}", use_container_width=True):
+                if st.button("Serve", key=f"serve_{o_id}", use_container_width=True):
                     update_order_status(o_id, 'completed')
                     st.success(f"Order #{o_id} served!")
                     st.rerun()
             with c2:
-                if st.button("❌ Void", key=f"void_{o_id}", use_container_width=True):
+                if st.button("Void", key=f"void_{o_id}", use_container_width=True):
                     restore_stock(o_id)
                     alert_id = check_void_anomaly(
                         order_id=o_id,

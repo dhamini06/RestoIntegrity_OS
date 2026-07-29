@@ -11,7 +11,7 @@ from components.manager_view import render_manager_view
 
 st.set_page_config(
     page_title="RestoIntegrity OS",
-    page_icon="📊",
+    page_icon="\u2699\ufe0f",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -65,18 +65,22 @@ def lookup_user(email):
         return None
 
 def render_login_page():
-    col1, col2, col3 = st.columns([1, 1.4, 1])
+    col1, col2, col3 = st.columns([1, 1.2, 1])
     with col2:
         st.markdown("""
-        <div style="background: white; border-radius: 24px; padding: 48px 40px;
-             box-shadow: 0 12px 60px rgba(197, 165, 90, 0.12);
-             border: 1px solid #E8D5A3;
-             animation: fadeInUp 0.6s ease-out; margin-top: 30px;">
+        <div style="background: #18181B; border-radius: 24px; padding: 48px 40px;
+             box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+             border: 1px solid rgba(255,255,255,0.06);
+             animation: fadeInUp 0.6s ease-out; margin-top: 40px;">
             <div style="text-align:center; margin-bottom: 32px;">
-                <div style="font-size:2.2rem; margin-bottom:4px;">📊</div>
-                <h2 style="color:#2C1810; margin: 0 0 4px; font-weight:800;
-                    font-family:Playfair Display, serif; font-size:1.6rem;">RestoIntegrity OS</h2>
-                <p style="color:#8C7A6B; font-size:0.85rem; margin:0; font-family:Inter, sans-serif;">
+                <div style="width:48px; height:48px; border-radius:14px; background:#C9A86A;
+                    display:flex; align-items:center; justify-content:center; margin:0 auto 16px;
+                    box-shadow: 0 8px 24px rgba(201,168,106,0.15);">
+                    <span style="color:#09090B; font-weight:800; font-size:1.4rem;">R</span>
+                </div>
+                <h2 style="color:#FAFAFA; margin: 0 0 4px; font-weight:700;
+                    font-family:Manrope, sans-serif; font-size:1.5rem; letter-spacing:0.02em;">RestoIntegrity OS</h2>
+                <p style="color:#71717A; font-size:0.82rem; margin:0; font-weight:400; letter-spacing:0.02em;">
                     AI-Powered Restaurant Operations
                 </p>
             </div>
@@ -87,26 +91,30 @@ def render_login_page():
         if page == "main":
             st.markdown("""
             <div style="text-align:center; margin-bottom:24px;">
-                <p style="color:#8C7A6B; font-size:0.85rem; margin:0; font-family:Inter, sans-serif;">
-                    Sign in to continue to your dashboard
+                <p style="color:#A1A1AA; font-size:0.85rem; margin:0;">
+                    Sign in to access your dashboard
                 </p>
             </div>
             """, unsafe_allow_html=True)
 
-            if st.button("Sign in with Google", key="google_continue", use_container_width=True):
+            if st.button("Sign In", key="google_continue", use_container_width=True):
                 st.session_state.login_page = "google_email"
                 st.rerun()
 
         elif page == "google_email":
             st.markdown("""
-            <div style="text-align:center; margin-bottom:20px;">
-                <svg width="32" height="32" viewBox="0 0 48 48"><path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/><path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.32-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.68 28.18C11.18 26.68 10.9 25.08 10.9 23.5s.28-3.18.78-4.68v-5.7H4.34C2.58 16.15 1.5 19.7 1.5 23.5s1.08 7.35 2.84 10.18l7.34-5.5z"/><path fill="#EA4335" d="M24 10.25c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 3.87 29.93 2 24 2 15.4 2 7.96 6.93 4.34 13.32l7.34 5.5C13.42 14.12 18.27 10.25 24 10.25z"/></svg>
-                <h3 style="color:#2C1810; margin:8px 0 4px; font-family:Playfair Display, serif;">Sign in with Google</h3>
-                <p style="color:#8C7A6B; font-size:0.8rem; margin:0;">Use your Google account to sign in</p>
+            <div style="text-align:center; margin-bottom:24px;">
+                <div style="width:40px; height:40px; border-radius:10px; background:#1F1F23;
+                    display:flex; align-items:center; justify-content:center; margin:0 auto 12px;
+                    border:1px solid rgba(255,255,255,0.06);">
+                    <span style="color:#A1A1AA; font-weight:600; font-size:0.9rem;">@</span>
+                </div>
+                <h3 style="color:#FAFAFA; margin:0 0 4px; font-family:Manrope, sans-serif; font-weight:600; font-size:1.1rem;">Sign in</h3>
+                <p style="color:#71717A; font-size:0.8rem; margin:0;">Enter your email to continue</p>
             </div>
             """, unsafe_allow_html=True)
 
-            google_email = st.text_input("Email address", placeholder="you@gmail.com", key="google_email_input", value=st.session_state.get("google_email_val", ""))
+            google_email = st.text_input("Email address", placeholder="you@example.com", key="google_email_input", value=st.session_state.get("google_email_val", ""))
             col_b1, col_b2 = st.columns(2)
             with col_b1:
                 if st.button("Back", key="google_back", use_container_width=True):
@@ -131,13 +139,14 @@ def render_login_page():
 
             st.markdown(f"""
             <div style="text-align:center; margin-bottom:24px;">
-                <div style="width:64px; height:64px; border-radius:50%; background:#4285F4;
-                    display:flex; align-items:center; justify-content:center; font-size:1.4rem;
-                    font-weight:500; color:white; margin:0 auto 12px; font-family:Inter;">
+                <div style="width:48px; height:48px; border-radius:50%; background:#1F1F23;
+                    display:flex; align-items:center; justify-content:center; font-size:1rem;
+                    font-weight:700; color:#FAFAFA; margin:0 auto 12px;
+                    border:1px solid rgba(201,168,106,0.2); letter-spacing:0.02em;">
                     {initials}
                 </div>
-                <div style="font-weight:600; color:#2C1810; font-size:1rem;">{user_data.get('full_name', '')}</div>
-                <div style="font-size:0.8rem; color:#8C7A6B;">{user_data.get('username', '')}</div>
+                <div style="font-weight:600; color:#FAFAFA; font-size:1rem;">{user_data.get('full_name', '')}</div>
+                <div style="font-size:0.78rem; color:#71717A;">{user_data.get('username', '')}</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -158,7 +167,7 @@ def render_login_page():
 
         st.markdown("""
         <div style="text-align:center; margin-top:24px;">
-            <p style="font-size:0.75rem; color:#8C7A6B; margin:0;">
+            <p style="font-size:0.72rem; color:#52525B; margin:0; letter-spacing:0.01em;">
                 By signing in, you agree to our Terms and Privacy Policy.
             </p>
         </div>
@@ -176,57 +185,71 @@ if not user:
     render_login_page()
     st.stop()
 
-if "user" in st.session_state and st.sidebar.button("🚪 Sign Out", key="logout_btn", use_container_width=True):
+if "user" in st.session_state and st.sidebar.button("Sign Out", key="logout_btn", use_container_width=True):
     st.session_state.pop("user", None)
     st.rerun()
 
 ROLE_MAP = {
-    "admin":    ["📊 Manager Dashboard", "📱 Customer Menu", "👨‍🍳 Kitchen View"],
-    "staff":    ["📱 Customer Menu", "👨‍🍳 Kitchen View"],
-    "kitchen":  ["👨‍🍳 Kitchen View"],
-    "customer": ["📱 Customer Menu"],
+    "admin":    ["Manager Dashboard", "Customer Menu", "Kitchen View"],
+    "staff":    ["Customer Menu", "Kitchen View"],
+    "kitchen":  ["Kitchen View"],
+    "customer": ["Customer Menu"],
 }
 
-allowed_views = ROLE_MAP.get(user["role"], ["📱 Customer Menu"])
+allowed_views = ROLE_MAP.get(user["role"], ["Customer Menu"])
 
 st.sidebar.markdown(f"""
-<div style="background: #F8F3E9; border-radius: 14px; padding: 14px; margin: 12px 0; border: 1px solid #E8D5A3;">
-    <div style="font-size:0.8rem; color:#8C7A6B;">Welcome back,</div>
-    <div style="font-size:1.1rem; font-weight:700; color:#2C1810; font-family:Playfair Display, serif;">{user['full_name']}</div>
-    <div style="margin-top:4px;"><span class="badge badge-gold">{user['role'].upper()}</span></div>
+<div style="background: #1F1F23; border-radius: 16px; padding: 16px; margin: 0 0 16px 0;
+    border: 1px solid rgba(255,255,255,0.06); text-align:center;">
+    <div style="width:40px; height:40px; border-radius:50%; background:#C9A86A;
+        display:flex; align-items:center; justify-content:center; margin:0 auto 8px;
+        box-shadow: 0 4px 16px rgba(201,168,106,0.15);">
+        <span style="color:#09090B; font-weight:700; font-size:0.85rem;">{user['full_name'][0]}</span>
+    </div>
+    <div style="font-size:0.82rem; color:#A1A1AA; letter-spacing:0.01em; font-weight:500;">Welcome back</div>
+    <div style="font-size:1rem; font-weight:700; color:#FAFAFA; margin:2px 0 8px;">{user['full_name']}</div>
+    <span class="badge badge-gold">{user['role'].upper()}</span>
 </div>
 """, unsafe_allow_html=True)
 
-role = st.sidebar.radio("Navigate to:", allowed_views, index=0)
+role = st.sidebar.radio("Navigate", allowed_views, index=0)
 
-st.sidebar.markdown("---")
+st.sidebar.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
 if user["role"] == "admin":
-    st.sidebar.markdown("<h4 style='color:#B8860B; font-family:Playfair Display, serif;'>⚙️ AI Settings</h4>", unsafe_allow_html=True)
-    api_key = st.sidebar.text_input("Gemini API Key:", type="password", value=os.getenv("GEMINI_API_KEY", ""))
+    st.sidebar.markdown("<div style='font-size:0.75rem; color:#71717A; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;'>AI Settings</div>", unsafe_allow_html=True)
+    api_key = st.sidebar.text_input("Gemini API Key", type="password", value=os.getenv("GEMINI_API_KEY", ""), label_visibility="collapsed", placeholder="Gemini API Key")
     if api_key:
         os.environ["GEMINI_API_KEY"] = api_key
-        st.sidebar.success("AI enabled!")
     else:
         os.environ.pop("GEMINI_API_KEY", None)
 
 st.markdown("""
-<div style="background: linear-gradient(135deg, #C5A55A, #A68332, #8B6914);
-     padding: 18px 24px; border-radius: 18px; margin-bottom: 25px;
-     box-shadow: 0 8px 30px rgba(197, 165, 90, 0.2);
+<div style="background: #18181B; border: 1px solid rgba(255,255,255,0.06);
+     border-radius: 20px; padding: 20px 24px; margin-bottom: 24px;
+     box-shadow: 0 8px 32px rgba(0,0,0,0.3);
      animation: fadeInUp 0.5s ease-out;">
-    <h1 style="color: white; margin: 0; font-size: 1.8rem; font-weight: 800; text-align: center; font-family: Playfair Display, serif;">
-        📊 RestoIntegrity OS
-    </h1>
-    <p style="color: rgba(255,255,255,0.85); margin: 5px 0 0 0; font-size: 0.9rem; text-align: center; font-weight: 400; font-family: Inter, sans-serif;">
-        AI-Powered Smart Restaurant Operations Platform
-    </p>
+    <div style="display:flex; align-items:center; gap:12px;">
+        <div style="width:40px; height:40px; border-radius:12px; background:#C9A86A;
+            display:flex; align-items:center; justify-content:center;
+            box-shadow: 0 4px 16px rgba(201,168,106,0.15);">
+            <span style="color:#09090B; font-weight:800; font-size:1.2rem;">R</span>
+        </div>
+        <div>
+            <h1 style="color: #FAFAFA; margin: 0; font-size: 1.4rem; font-weight: 700; letter-spacing: 0.02em;">
+                RestoIntegrity OS
+            </h1>
+            <p style="color: #71717A; margin: 2px 0 0 0; font-size: 0.82rem; font-weight: 400; letter-spacing: 0.01em;">
+                AI-Powered Smart Restaurant Operations Platform
+            </p>
+        </div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
-if role.startswith("📊"):
+if role == "Manager Dashboard":
     render_manager_view(user)
-elif role.startswith("📱"):
+elif role == "Customer Menu":
     render_customer_view(user)
-elif role.startswith("👨‍🍳"):
+elif role == "Kitchen View":
     render_kitchen_view(user)
