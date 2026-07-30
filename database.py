@@ -222,6 +222,37 @@ def init_db():
 def migrate_db():
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    # ── Users table: add email column if missing (migrate from username) ──
+    try:
+        cursor.execute("PRAGMA table_info(users)")
+        user_cols = {row[1] for row in cursor.fetchall()}
+        if "email" not in user_cols and "username" in user_cols:
+            cursor.execute("ALTER TABLE users ADD COLUMN email TEXT")
+            cursor.execute("UPDATE users SET email = username WHERE email IS NULL")
+            cursor.execute("ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0")
+            cursor.execute("ALTER TABLE users ADD COLUMN google_id TEXT")
+            cursor.execute("ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1")
+            cursor.execute("ALTER TABLE users ADD COLUMN last_login TEXT")
+            cursor.execute("ALTER TABLE users ADD COLUMN updated_at TEXT")
+            cursor.execute("UPDATE users SET updated_at = created_at WHERE updated_at IS NULL")
+            conn.commit()
+        elif "email" not in user_cols:
+            cursor.execute("ALTER TABLE users ADD COLUMN email TEXT")
+            cursor.execute("ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0")
+            cursor.execute("ALTER TABLE users ADD COLUMN google_id TEXT")
+            cursor.execute("ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1")
+            cursor.execute("ALTER TABLE users ADD COLUMN last_login TEXT")
+            cursor.execute("ALTER TABLE users ADD COLUMN updated_at TEXT")
+            cursor.execute("UPDATE users SET updated_at = created_at WHERE updated_at IS NULL")
+            conn.commit()
+        if "password_hash" not in user_cols and "password" in user_cols:
+            cursor.execute("ALTER TABLE users ADD COLUMN password_hash TEXT")
+            cursor.execute("UPDATE users SET password_hash = password WHERE password_hash IS NULL")
+            conn.commit()
+    except Exception:
+        conn.rollback()
+
     try:
         cursor.execute("PRAGMA table_info(orders)")
         cols = [row[1] for row in cursor.fetchall()]
