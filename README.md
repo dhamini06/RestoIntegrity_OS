@@ -92,6 +92,7 @@ streamlit run app.py
 | Username | Password | Role | Access |
 |----------|----------|------|--------|
 | admin | admin123 | **admin** | Full access — Manager Dashboard, Reservations, Queue, Customer Menu, Kitchen View |
+| dhamini467@gmail.com | Dhamini@123 | **admin** | Full access — same as admin |
 | alice | alice123 | **staff** | Waiter — Reservations, Queue, Customer Menu, Kitchen View |
 | bob | bob123 | **staff** | Waiter — Reservations, Queue, Customer Menu, Kitchen View |
 | charlie | charlie123 | **staff** | Waiter — Reservations, Queue, Customer Menu, Kitchen View |

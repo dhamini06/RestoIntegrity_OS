@@ -13,8 +13,29 @@ def seed_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    cursor.execute("INSERT OR IGNORE INTO users (username, password_hash, role, full_name) VALUES (?, ?, ?, ?)",
+                   ('dhamini467@gmail.com', _hash('Dhamini@123'), 'admin', 'K. Dhamini'))
+
+    cursor.execute("SELECT COUNT(*) FROM restaurant_tables")
+    if cursor.fetchone()[0] == 0:
+        tables_data = [
+            ("Table 1", 2, "Window"),
+            ("Table 2", 4, "Main Hall"),
+            ("Table 3", 2, "Main Hall"),
+            ("Table 4", 6, "Window"),
+            ("Table 5", 4, "Patio"),
+            ("Table 6", 2, "Patio"),
+            ("Table 7", 8, "VIP Room"),
+            ("Table 8", 4, "Main Hall"),
+        ]
+        cursor.executemany(
+            "INSERT INTO restaurant_tables (table_number, capacity, location) VALUES (?, ?, ?)",
+            tables_data
+        )
+
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] > 0:
+        conn.commit()
         conn.close()
         return
 
@@ -26,10 +47,11 @@ def seed_db():
         ('bob', _hash('bob123'), 'staff', 'Bob Server'),
         ('charlie', _hash('charlie123'), 'staff', 'Charlie Server'),
         ('chef_ramsay', _hash('chef123'), 'kitchen', 'Chef Ramsay'),
-        ('guest', _hash('guest123'), 'customer', 'Walk-in Guest')
+        ('guest', _hash('guest123'), 'customer', 'Walk-in Guest'),
+        ('dhamini467@gmail.com', _hash('Dhamini@123'), 'admin', 'K. Dhamini'),
     ]
     cursor.executemany(
-        "INSERT INTO users (username, password_hash, role, full_name) VALUES (?, ?, ?, ?)",
+        "INSERT OR IGNORE INTO users (username, password_hash, role, full_name) VALUES (?, ?, ?, ?)",
         users_data
     )
 
@@ -182,23 +204,6 @@ def seed_db():
         "INSERT INTO security_alerts (alert_type, severity, details, triggered_by, ai_analysis, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
         alerts_data
     )
-
-    cursor.execute("SELECT COUNT(*) FROM restaurant_tables")
-    if cursor.fetchone()[0] == 0:
-        tables_data = [
-            ("Table 1", 2, "Window"),
-            ("Table 2", 4, "Main Hall"),
-            ("Table 3", 2, "Main Hall"),
-            ("Table 4", 6, "Window"),
-            ("Table 5", 4, "Patio"),
-            ("Table 6", 2, "Patio"),
-            ("Table 7", 8, "VIP Room"),
-            ("Table 8", 4, "Main Hall"),
-        ]
-        cursor.executemany(
-            "INSERT INTO restaurant_tables (table_number, capacity, location) VALUES (?, ?, ?)",
-            tables_data
-        )
 
     conn.commit()
     conn.close()
