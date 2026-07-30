@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from database import get_db_connection, init_db, migrate_db, add_notification, get_notifications, unread_notification_count, mark_notification_read
 from mock_data import seed_db
-from components.ui_helpers import inject_custom_css
+from components.ui_helpers import inject_custom_css, inject_auth_css
 from components.customer_view import render_customer_view
 from components.kitchen_view import render_kitchen_view
 from components.manager_view import render_manager_view
