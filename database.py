@@ -104,6 +104,62 @@ def init_db():
     )
     """)
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS restaurant_tables (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        table_number TEXT UNIQUE NOT NULL,
+        capacity INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'available',
+        location TEXT DEFAULT 'Main Hall'
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS reservations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customer_name TEXT NOT NULL,
+        customer_email TEXT,
+        phone TEXT,
+        party_size INTEGER NOT NULL,
+        table_id INTEGER,
+        reservation_time TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'confirmed',
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (table_id) REFERENCES restaurant_tables(id)
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        role TEXT,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        type TEXT NOT NULL DEFAULT 'info',
+        is_read INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS queue (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customer_name TEXT NOT NULL,
+        phone TEXT,
+        party_size INTEGER NOT NULL,
+        table_id INTEGER,
+        status TEXT NOT NULL DEFAULT 'waiting',
+        position INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        seated_at TEXT,
+        notes TEXT,
+        FOREIGN KEY (table_id) REFERENCES restaurant_tables(id)
+    )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -129,6 +185,130 @@ def migrate_db():
         pass
     finally:
         conn.close()
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(restaurant_tables)")
+        if not cursor.fetchall():
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS restaurant_tables (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    table_number TEXT UNIQUE NOT NULL,
+                    capacity INTEGER NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'available',
+                    location TEXT DEFAULT 'Main Hall'
+                )
+            """)
+            for i in range(1, 9):
+                cursor.execute(
+                    "INSERT OR IGNORE INTO restaurant_tables (table_number, capacity, location) VALUES (?, ?, ?)",
+                    (f"Table {i}", 4 if i % 2 == 0 else 2, "Main Hall")
+                )
+        cursor.execute("PRAGMA table_info(reservations)")
+        if not cursor.fetchall():
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS reservations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    customer_name TEXT NOT NULL,
+                    customer_email TEXT,
+                    phone TEXT,
+                    party_size INTEGER NOT NULL,
+                    table_id INTEGER,
+                    reservation_time TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'confirmed',
+                    notes TEXT,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (table_id) REFERENCES restaurant_tables(id)
+                )
+            """)
+        cursor.execute("PRAGMA table_info(notifications)")
+        if not cursor.fetchall():
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS notifications (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    role TEXT,
+                    title TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    type TEXT NOT NULL DEFAULT 'info',
+                    is_read INTEGER DEFAULT 0,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id)
+                )
+            """)
+        cursor.execute("PRAGMA table_info(queue)")
+        if not cursor.fetchall():
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS queue (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    customer_name TEXT NOT NULL,
+                    phone TEXT,
+                    party_size INTEGER NOT NULL,
+                    table_id INTEGER,
+                    status TEXT NOT NULL DEFAULT 'waiting',
+                    position INTEGER NOT NULL,
+                    created_at TEXT NOT NULL,
+                    seated_at TEXT,
+                    notes TEXT,
+                    FOREIGN KEY (table_id) REFERENCES restaurant_tables(id)
+                )
+            """)
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+def add_notification(title, message, type="info", role=None, user_id=None):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO notifications (user_id, role, title, message, type, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+        (user_id, role, title, message, type, datetime.now().isoformat())
+    )
+    conn.commit()
+    conn.close()
+
+def get_notifications(role=None, user_id=None, limit=20):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    if user_id:
+        cursor.execute(
+            "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
+            (user_id, limit)
+        )
+    elif role:
+        cursor.execute(
+            "SELECT * FROM notifications WHERE role = ? OR role IS NULL ORDER BY created_at DESC LIMIT ?",
+            (role, limit)
+        )
+    else:
+        cursor.execute(
+            "SELECT * FROM notifications ORDER BY created_at DESC LIMIT ?", (limit,)
+        )
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+def mark_notification_read(notification_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE notifications SET is_read = 1 WHERE id = ?", (notification_id,))
+    conn.commit()
+    conn.close()
+
+def unread_notification_count(role=None, user_id=None):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    if user_id:
+        cursor.execute("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0", (user_id,))
+    elif role:
+        cursor.execute("SELECT COUNT(*) FROM notifications WHERE (role = ? OR role IS NULL) AND is_read = 0", (role,))
+    else:
+        cursor.execute("SELECT COUNT(*) FROM notifications WHERE is_read = 0")
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
 
 if __name__ == "__main__":
     init_db()

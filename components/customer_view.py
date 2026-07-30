@@ -1,6 +1,6 @@
 import streamlit as st
 import sqlite3
-from database import get_db_connection
+from database import get_db_connection, add_notification
 from gemini_service import get_menu_recommendations
 from datetime import datetime
 
@@ -258,6 +258,11 @@ def render_customer_view(user):
             </div>
             """, unsafe_allow_html=True)
 
+            add_notification(
+                f"New Order #{order_id}",
+                f"Order #{order_id} placed at {st.session_state.table_number}. Total: ${grand_total:.2f}. Payment: {payment_method}.",
+                role="admin"
+            )
             st.session_state.cart = {}
             st.toast("Kitchen is on it!", icon=None)
             st.rerun()

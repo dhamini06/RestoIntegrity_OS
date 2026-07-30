@@ -183,6 +183,23 @@ def seed_db():
         alerts_data
     )
 
+    cursor.execute("SELECT COUNT(*) FROM restaurant_tables")
+    if cursor.fetchone()[0] == 0:
+        tables_data = [
+            ("Table 1", 2, "Window"),
+            ("Table 2", 4, "Main Hall"),
+            ("Table 3", 2, "Main Hall"),
+            ("Table 4", 6, "Window"),
+            ("Table 5", 4, "Patio"),
+            ("Table 6", 2, "Patio"),
+            ("Table 7", 8, "VIP Room"),
+            ("Table 8", 4, "Main Hall"),
+        ]
+        cursor.executemany(
+            "INSERT INTO restaurant_tables (table_number, capacity, location) VALUES (?, ?, ?)",
+            tables_data
+        )
+
     conn.commit()
     conn.close()
 

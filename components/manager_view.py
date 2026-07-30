@@ -184,6 +184,100 @@ def render_security_feed(user):
                 else:
                     st.markdown("<p style='color:#71717A; font-size:0.82rem;'>No AI analysis yet. Add your Gemini API key in settings to enable.</p>", unsafe_allow_html=True)
 
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+    render_table_management()
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+    render_customer_list()
+
+
+def render_table_management():
+    st.markdown("<h3 style='color:#FAFAFA; font-weight:600; font-size:1.1rem; margin-bottom:16px;'>Table Management</h3>", unsafe_allow_html=True)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM restaurant_tables ORDER BY table_number")
+    tables = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    status_colors = {"available": "badge-low", "occupied": "badge-blue", "reserved": "badge-gold"}
+    cols = st.columns(4)
+    for i, t in enumerate(tables):
+        with cols[i % 4]:
+            st.markdown(f"""
+            <div class="glass-card" style="text-align:center; padding:16px; margin-bottom:12px;
+                border-left:3px solid {'#22C55E' if t['status'] == 'available' else '#3B82F6' if t['status'] == 'occupied' else '#C9A86A'};">
+                <div style="font-size:1rem; font-weight:700; color:#FAFAFA;">{t['table_number']}</div>
+                <div style="font-size:0.78rem; color:#71717A;">Cap: {t['capacity']} &middot; {t['location']}</div>
+                <div style="margin-top:6px;"><span class="badge {status_colors.get(t['status'], 'badge-medium')}">{t['status']}</span></div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("Mark Available", key=f"free_{t['id']}", use_container_width=True, disabled=(t['status'] == 'available')):
+                conn = get_db_connection()
+                cur = conn.cursor()
+                cur.execute("UPDATE restaurant_tables SET status = 'available' WHERE id = ?", (t["id"],))
+                conn.commit()
+                conn.close()
+                st.rerun()
+
+
+def render_customer_list():
+    st.markdown("<h3 style='color:#FAFAFA; font-weight:600; font-size:1.1rem; margin-bottom:16px;'>Customer History</h3>", unsafe_allow_html=True)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT u.full_name, u.username, u.role,
+               COUNT(o.id) as order_count,
+               COALESCE(SUM(CASE WHEN o.status = 'completed' THEN o.total ELSE 0 END), 0) as total_spent,
+               MAX(o.created_at) as last_order
+        FROM users u
+        LEFT JOIN orders o ON u.username = o.served_by
+        WHERE u.role = 'customer'
+        GROUP BY u.id
+        ORDER BY total_spent DESC
+    """)
+    customers = [dict(r) for r in cursor.fetchall()]
+
+    cursor.execute("""
+        SELECT r.customer_name, r.customer_email, COUNT(r.id) as reservation_count,
+               MAX(r.created_at) as last_reservation
+        FROM reservations r
+        GROUP BY r.customer_email
+        ORDER BY reservation_count DESC
+    """)
+    reservation_customers = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    col_left, col_right = st.columns(2)
+
+    with col_left:
+        if customers:
+            for c in customers:
+                st.markdown(f"""
+                <div class="glass-card-subtle" style="padding:12px; margin-bottom:8px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <strong style="color:#FAFAFA; font-size:0.85rem;">{c['full_name']}</strong>
+                        <span style="color:#C9A86A; font-weight:600;">${c['total_spent']:.2f}</span>
+                    </div>
+                    <div style="font-size:0.75rem; color:#71717A; margin-top:2px;">
+                        {c['order_count']} orders &middot; {c.get('username', '')}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.markdown("<p style='color:#71717A; font-size:0.82rem;'>No customer data yet.</p>", unsafe_allow_html=True)
+
+    with col_right:
+        st.markdown("<p style='color:#A1A1AA; font-weight:600; font-size:0.85rem; margin-bottom:8px;'>Recent Reservations</p>", unsafe_allow_html=True)
+        if reservation_customers:
+            for r in reservation_customers:
+                st.markdown(f"""
+                <div class="glass-card-subtle" style="padding:12px; margin-bottom:8px;">
+                    <strong style="color:#FAFAFA; font-size:0.85rem;">{r['customer_name']}</strong>
+                    <div style="font-size:0.75rem; color:#71717A;">{r.get('customer_email', '')} &middot; {r['reservation_count']} reservation(s)</div>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.markdown("<p style='color:#71717A; font-size:0.82rem;'>No reservations yet.</p>", unsafe_allow_html=True)
+
 
 def render_analytics():
     st.markdown("<h3 style='color:#FAFAFA; font-weight:600; font-size:1.1rem; margin-bottom:16px;'>Revenue Analytics</h3>", unsafe_allow_html=True)

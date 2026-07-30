@@ -8,6 +8,9 @@ from components.ui_helpers import inject_custom_css
 from components.customer_view import render_customer_view
 from components.kitchen_view import render_kitchen_view
 from components.manager_view import render_manager_view
+from components.reservations_view import render_reservation_view
+from components.queue_view import render_queue_view
+from database import add_notification, get_notifications, unread_notification_count, mark_notification_read
 
 st.set_page_config(
     page_title="RestoIntegrity OS",
@@ -190,10 +193,10 @@ if "user" in st.session_state and st.sidebar.button("Sign Out", key="logout_btn"
     st.rerun()
 
 ROLE_MAP = {
-    "admin":    ["Manager Dashboard", "Customer Menu", "Kitchen View"],
-    "staff":    ["Customer Menu", "Kitchen View"],
+    "admin":    ["Manager Dashboard", "Reservations", "Queue", "Customer Menu", "Kitchen View"],
+    "staff":    ["Reservations", "Queue", "Customer Menu", "Kitchen View"],
     "kitchen":  ["Kitchen View"],
-    "customer": ["Customer Menu"],
+    "customer": ["Customer Menu", "Reservations", "Queue"],
 }
 
 allowed_views = ROLE_MAP.get(user["role"], ["Customer Menu"])
@@ -213,6 +216,30 @@ st.sidebar.markdown(f"""
 """, unsafe_allow_html=True)
 
 role = st.sidebar.radio("Navigate", allowed_views, index=0)
+
+st.sidebar.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+notif_count = unread_notification_count(role=user["role"])
+notif_label = f"Notifications ({notif_count})" if notif_count else "Notifications"
+with st.sidebar.expander(notif_label):
+    notifs = get_notifications(role=user["role"], limit=10)
+    if not notifs:
+        st.markdown("<p style='color:#71717A; font-size:0.78rem; text-align:center;'>No notifications</p>", unsafe_allow_html=True)
+    else:
+        for n in notifs:
+            type_icon = {"info": "i", "success": "\u2713", "warning": "!", "alert": "\u26a0"}.get(n["type"], "i")
+            st.markdown(f"""
+            <div style="background:{'#1F1F23' if not n['is_read'] else 'transparent'}; border-radius:10px; padding:8px; margin-bottom:4px; font-size:0.78rem; cursor:pointer;">
+                <div style="display:flex; justify-content:space-between;">
+                    <strong style="color:#FAFAFA;">{n['title']}</strong>
+                    <span style="color:#71717A;">{n['created_at'][:10]}</span>
+                </div>
+                <p style="color:#A1A1AA; margin:2px 0 0; font-size:0.75rem;">{n['message']}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            if not n["is_read"] and st.button("Mark read", key=f"read_{n['id']}", use_container_width=True):
+                mark_notification_read(n["id"])
+                st.rerun()
 
 st.sidebar.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
@@ -253,3 +280,7 @@ elif role == "Customer Menu":
     render_customer_view(user)
 elif role == "Kitchen View":
     render_kitchen_view(user)
+elif role == "Reservations":
+    render_reservation_view(user)
+elif role == "Queue":
+    render_queue_view(user)
