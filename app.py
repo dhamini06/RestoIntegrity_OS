@@ -71,27 +71,8 @@ def render_login_page():
     </div>
     """, unsafe_allow_html=True)
 
-    # ═══════════ SPLIT SCREEN via Streamlit native columns ══════════════
-    left_col, right_col = st.columns([4, 6])
-
-    # ═══════════ LEFT BRAND PANEL (40%) ═══════════════════════════════════
-    with left_col:
-        st.markdown("""
-        <div class="auth-brand">
-            <div class="auth-brand-logo-row">
-                <div class="auth-brand-icon"><span>R</span></div>
-                <div class="auth-brand-text">
-                    <div class="auth-brand-name">RestoIntegrity OS</div>
-                    <div class="auth-brand-sub">AI-Powered Restaurant Operations</div>
-                </div>
-            </div>
-            <div class="auth-brand-tagline">Sign in to manage your restaurant operations.</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # ═══════════ RIGHT AUTH PANEL (40%) ══════════════════════════════════
-    with right_col:
-        if page == "main":
+    # ═══════════ CENTERED AUTH PANEL ═══════════════════════════════════════
+    if page == "main":
             st.markdown("""
             <div class="auth-card-logo">
                 <div class="auth-card-logo-hex">
@@ -153,7 +134,7 @@ def render_login_page():
             </div>
             """, unsafe_allow_html=True)
 
-        elif page == "email":
+    elif page == "email":
             st.markdown("""
             <div class="auth-flow-header">
                 <div class="icon-wrap" style="background:rgba(201,168,106,0.1);border-radius:14px;">
@@ -192,7 +173,7 @@ def render_login_page():
                     else:
                         st.error("Please enter your email.")
 
-        elif page == "otp_sent":
+    elif page == "otp_sent":
             email = st.session_state.get("auth_email", "")
             cooldown_remaining = st.session_state.pop("auth_cooldown", 0)
 

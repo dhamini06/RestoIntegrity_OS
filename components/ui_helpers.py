@@ -283,6 +283,12 @@ def inject_auth_css():
         padding: 0 !important;
         margin: 0 !important;
     }
+    .block-container {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-height: 100vh !important;
+    }
     .stApp > header { display: none !important; }
 
     /* ── Keyframes ──────────────────────────────────────────── */
@@ -327,6 +333,23 @@ def inject_auth_css():
     @keyframes authGlowPulse {
         0%, 100% { box-shadow: 0 0 20px rgba(201,168,106,0.15); }
         50% { box-shadow: 0 0 40px rgba(201,168,106,0.3); }
+    }
+
+    /* ── Auth Card Width ────────────────────────────────────── */
+    .block-container > div[data-testid="stVerticalBlock"] {
+        width: 100%;
+        max-width: 440px;
+        padding: 32px 16px;
+    }
+    .block-container > div[data-testid="stVerticalBlock"] > div {
+        background: rgba(20,20,24,0.72);
+        backdrop-filter: blur(22px);
+        -webkit-backdrop-filter: blur(22px);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 28px;
+        padding: 44px 40px 36px;
+        box-shadow: 0 32px 96px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02) inset;
+        animation: authScaleIn 0.6s ease-out 0.1s both;
     }
     /* ── Background ─────────────────────────────────────────── */
     .auth-bg {
@@ -420,54 +443,7 @@ def inject_auth_css():
     .auth-particle:nth-child(11) { left: 5%;  top: 30%; animation: authParticle 14s ease-in-out infinite 1s; width: 2px; height: 2px; }
     .auth-particle:nth-child(12) { left: 45%; top: 20%; animation: authParticle2 11s ease-in-out infinite 4s; background: #3B82F6; }
 
-    /* ── Brand (left column) ────────────────────────────────── */
-    .auth-brand {
-        padding: 48px 40px 48px 16px;
-        animation: authFadeInUp 0.6s ease-out;
-    }
-    .auth-brand-logo-row {
-        display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
-    }
-    .auth-brand-icon {
-        width: 44px; height: 44px;
-        border-radius: 12px;
-        background: linear-gradient(135deg, #C9A86A 0%, #B8954E 100%);
-        display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 8px 32px rgba(201,168,106,0.2);
-        position: relative; overflow: hidden;
-    }
-    .auth-brand-icon::after {
-        content: ''; position: absolute; inset: 0;
-        background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
-        background-size: 200% 200%;
-        animation: authGoldShimmer 4s ease-in-out infinite;
-    }
-    .auth-brand-icon span { color: #09090B; font-weight: 800; font-size: 1.35rem; position: relative; z-index: 1; }
-    .auth-brand-text { display: flex; flex-direction: column; }
-    .auth-brand-name { font-size: 1rem; font-weight: 700; color: #FAFAFA; letter-spacing: 0.01em; }
-    .auth-brand-sub { font-size: 0.72rem; color: #71717A; font-weight: 500; letter-spacing: 0.04em; }
-    .auth-brand-tagline {
-        font-size: 0.82rem;
-        color: #52525B;
-        line-height: 1.5;
-        max-width: 360px;
-    }
-
-    /* ── Auth Card (Right Panel) ────────────────────────────── */
-    div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2),
-    div[data-testid="column"]:nth-of-type(2).auth-card-col {
-        background: rgba(20,20,24,0.72);
-        backdrop-filter: blur(22px);
-        -webkit-backdrop-filter: blur(22px);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 28px;
-        padding: 44px 40px 36px !important;
-        box-shadow: 0 32px 96px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02) inset;
-        animation: authScaleIn 0.6s ease-out 0.1s both;
-    }
-    div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2) > div {
-        width: 100%;
-    }
+    /* ── Auth Card ──────────────────────────────────────────── */
     .auth-card-logo {
         width: 56px; height: 56px;
         margin: 0 auto 18px;
@@ -570,26 +546,14 @@ def inject_auth_css():
     .auth-sent-hint { font-size: 0.68rem; color: #52525B; margin: 4px 0 0; }
 
     /* ── Responsive ─────────────────────────────────────────── */
-    @media (max-width: 1200px) {
-        .auth-brand { padding: 40px 32px 40px 16px; }
-        div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2) {
-            padding: 36px 32px 32px !important;
-        }
-    }
-    @media (max-width: 1024px) {
-        .auth-brand { padding: 40px 24px 24px 16px; }
-        div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2) {
-            padding: 24px 32px 32px !important;
-        }
-    }
     @media (max-width: 640px) {
-        .auth-brand { padding: 28px 20px 16px; }
-        div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2) {
-            padding: 28px 22px 24px !important;
+        .block-container > div[data-testid="stVerticalBlock"] {
+            padding: 16px 12px;
+        }
+        .block-container > div[data-testid="stVerticalBlock"] > div {
+            padding: 28px 22px 24px;
             border-radius: 22px;
         }
-        .auth-brand-icon { width: 36px; height: 36px; }
-        .auth-brand-icon span { font-size: 1.1rem; }
         .auth-security { flex-direction: column; gap: 6px; }
         .auth-card-heading h2 { font-size: 1.2rem; }
     }
