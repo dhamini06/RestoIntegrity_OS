@@ -103,11 +103,26 @@ def request_otp(email: str) -> dict:
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
     user = cursor.fetchone()
-    conn.close()
-    if not user:
-        _audit_log(email, "otp_requested", "failed", details="No account found")
-        return {"success": False, "error": "No account found with this email."}
-    user = dict(user)
+    if user:
+        user = dict(user)
+    else:
+        full_name = email.split("@")[0].replace(".", " ").title()
+        now = datetime.now().isoformat()
+        cursor.execute(
+            "INSERT INTO users (email, password_hash, full_name, role, avatar_url, google_id, email_verified, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (email, None, full_name, "customer", "", "", 0, now, now),
+        )
+        user_id = cursor.lastrowid
+        conn.commit()
+        user = {
+            "id": user_id,
+            "email": email,
+            "full_name": full_name,
+            "role": "customer",
+            "avatar_url": "",
+            "google_id": "",
+        }
+        _audit_log(email, "account_created", "success", user_id, "Auto-created via OTP request")
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
