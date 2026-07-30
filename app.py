@@ -51,7 +51,7 @@ def render_login_page():
 
     page = st.session_state.get("login_page", "main")
 
-    # ─── Background + JS to hide streamlit chrome ───────────────────────
+    # ─── Background ─────────────────────────────────────────────────────
     st.markdown("""
     <div class="auth-bg">
         <div class="auth-bg-grid"></div>
@@ -69,9 +69,6 @@ def render_login_page():
         <div class="auth-particle"></div><div class="auth-particle"></div><div class="auth-particle"></div>
         <div class="auth-particle"></div><div class="auth-particle"></div><div class="auth-particle"></div>
     </div>
-    <script>
-        document.body.classList.add('auth-mode-active');
-    </script>
     """, unsafe_allow_html=True)
 
     # ═══════════ SPLIT SCREEN via Streamlit native columns ══════════════

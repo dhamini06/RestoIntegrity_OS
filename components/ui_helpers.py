@@ -270,37 +270,20 @@ def inject_custom_css():
 def inject_auth_css():
     st.markdown("""
     <style>
-    /* ── Login mode: hide Streamlit chrome ──────────────────── */
-    .auth-mode-active header,
-    .auth-mode-active footer,
-    .auth-mode-active #stHeader,
-    .auth-mode-active .stAppToolbar,
-    .auth-mode-active .stAppDeployButton,
-    .auth-mode-active div[data-testid="stToolbar"],
-    .auth-mode-active div[data-testid="stDecoration"],
-    .auth-mode-active section[data-testid="stSidebar"] {
+    /* ── Hide Streamlit chrome during login ──────────────────── */
+    /* This CSS is only in the DOM when auth page renders */
+    header, footer, #stHeader, .stAppToolbar, .stAppDeployButton,
+    div[data-testid="stToolbar"], div[data-testid="stDecoration"],
+    section[data-testid="stSidebar"] {
         display: none !important;
     }
-    .auth-mode-active .main {
-        padding: 0 !important;
-        margin: 0 !important;
-        max-width: 100% !important;
-    }
-    .auth-mode-active .block-container {
+    .main, .block-container, div[data-testid="stAppViewContainer"],
+    div[data-testid="stAppViewBlock"] {
         max-width: 100% !important;
         padding: 0 !important;
         margin: 0 !important;
     }
-    .auth-mode-active div[data-testid="stAppViewContainer"] {
-        max-width: 100% !important;
-        padding: 0 !important;
-    }
-    .auth-mode-active div[data-testid="stAppViewBlock"] {
-        padding: 0 !important;
-    }
-    .auth-mode-active .stApp > header {
-        display: none !important;
-    }
+    .stApp > header { display: none !important; }
 
     /* ── Keyframes ──────────────────────────────────────────── */
     @keyframes authFadeInUp {
@@ -633,7 +616,8 @@ def inject_auth_css():
     .auth-social-name:hover { color: #71717A; }
 
     /* ── Auth Card (Right Panel) ────────────────────────────── */
-    .auth-mode-active div[data-testid="columns"] > div[data-testid="column"]:nth-child(2) {
+    div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2),
+    div[data-testid="column"]:nth-of-type(2).auth-card-col {
         background: rgba(20,20,24,0.72);
         backdrop-filter: blur(22px);
         -webkit-backdrop-filter: blur(22px);
@@ -643,7 +627,7 @@ def inject_auth_css():
         box-shadow: 0 32px 96px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02) inset;
         animation: authScaleIn 0.6s ease-out 0.1s both;
     }
-    .auth-mode-active div[data-testid="columns"] > div[data-testid="column"]:nth-child(2) > div {
+    div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2) > div {
         width: 100%;
     }
     .auth-card-logo {
@@ -750,14 +734,14 @@ def inject_auth_css():
     /* ── Responsive ─────────────────────────────────────────── */
     @media (max-width: 1200px) {
         .auth-hero { padding: 40px 40px 40px 16px; }
-        .auth-mode-active div[data-testid="columns"] > div[data-testid="column"]:nth-child(2) {
+        div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2) {
             padding: 36px 32px 32px !important;
         }
         .auth-preview-grid { gap: 12px; }
     }
     @media (max-width: 1024px) {
         .auth-hero { padding: 40px 32px 24px; }
-        .auth-mode-active div[data-testid="columns"] > div[data-testid="column"]:nth-child(2) {
+        div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2) {
             padding: 24px 32px 32px !important;
         }
         .auth-hero-inner { max-width: 100%; }
@@ -770,7 +754,7 @@ def inject_auth_css():
     }
     @media (max-width: 640px) {
         .auth-hero { padding: 28px 20px 16px; }
-        .auth-mode-active div[data-testid="columns"] > div[data-testid="column"]:nth-child(2) {
+        div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2) {
             padding: 28px 22px 24px !important;
             border-radius: 22px;
         }
