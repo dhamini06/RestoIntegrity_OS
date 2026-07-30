@@ -99,30 +99,8 @@ def login_with_password(email: str, password: str) -> dict:
 
 def request_otp(email: str) -> dict:
     email = sanitize_email(email)
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
-    user = cursor.fetchone()
-    if user:
-        user = dict(user)
-    else:
-        full_name = email.split("@")[0].replace(".", " ").title()
-        now = datetime.now().isoformat()
-        cursor.execute(
-            "INSERT INTO users (email, password_hash, full_name, role, avatar_url, google_id, email_verified, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (email, None, full_name, "customer", "", "", 0, now, now),
-        )
-        user_id = cursor.lastrowid
-        conn.commit()
-        user = {
-            "id": user_id,
-            "email": email,
-            "full_name": full_name,
-            "role": "customer",
-            "avatar_url": "",
-            "google_id": "",
-        }
-        _audit_log(email, "account_created", "success", user_id, "Auto-created via OTP request")
+    full_name = email.split("@")[0].replace(".", " ").title()
+    user = get_or_create_user(email=email, full_name=full_name, role="customer")
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
