@@ -36,7 +36,7 @@ def render_booking_form(user):
         time_val = st.time_input("Time", value=datetime.now().time().replace(hour=19, minute=0))
 
     name = st.text_input("Name", placeholder="Your name", value=user.get("full_name", ""))
-    email = st.text_input("Email", value=user.get("username", ""), placeholder="your@email.com")
+    email = st.text_input("Email", value=user.get("email", ""), placeholder="your@email.com")
     phone = st.text_input("Phone", placeholder="+1 (555) 000-0000")
     party_size = st.number_input("Party Size", min_value=1, max_value=20, value=2)
 
@@ -145,7 +145,7 @@ def render_customer_reservations(user):
         LEFT JOIN restaurant_tables t ON r.table_id = t.id
         WHERE r.customer_email = ?
         ORDER BY r.reservation_time DESC
-    """, (user["username"],))
+    """, (user["email"],))
     reservations = [dict(r) for r in cursor.fetchall()]
     conn.close()
 

@@ -184,7 +184,7 @@ def render_kitchen_view(user):
                     restore_stock(o_id)
                     alert_id = check_void_anomaly(
                         order_id=o_id,
-                        staff_username=user["username"],
+                        staff_username=user["email"],
                         current_status='preparing'
                     )
                     update_order_status(o_id, 'voided')

@@ -212,7 +212,7 @@ def render_customer_view(user):
                     payment_method, served_by, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (st.session_state.table_number, 'pending', cart_total, 0.0, grand_total,
-                  tax, tip, payment_method, user['username'], now_str))
+                  tax, tip, payment_method, user['email'], now_str))
             order_id = cursor.lastrowid
 
             for item_id, qty in st.session_state.cart.items():

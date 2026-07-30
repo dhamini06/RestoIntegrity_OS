@@ -5,9 +5,9 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
-from database import get_db_connection
+from database import get_db_connection, add_notification
 from integrity_engine import check_void_anomaly, check_discount_anomaly, check_shrinkage_anomaly
-from gemini_service import get_demand_forecast, ask_manager_assistant
+from gemini_service import get_demand_forecast, ask_manager_assistant, query_database_copilot, get_smart_inventory_forecast, detect_kitchen_bottlenecks, generate_smart_notifications
 
 AXIS_STYLE = dict(gridcolor='rgba(255,255,255,0.04)', zerolinecolor='rgba(255,255,255,0.04)')
 
@@ -33,13 +33,16 @@ def render_manager_view(user):
     st.markdown("<h2 style='font-weight:700; color:#FAFAFA; font-size:1.4rem; margin-bottom:4px;'>Operations Command Center</h2>", unsafe_allow_html=True)
     st.markdown("<p style='color:#71717A; font-size:0.85rem; margin-bottom:24px;'>Business intelligence, anomaly detection, and AI-powered insights.</p>", unsafe_allow_html=True)
 
-    tab_sec, tab_analytics, tab_tips, tab_copilot = st.tabs([
+    tab_exec, tab_sec, tab_analytics, tab_tips, tab_copilot = st.tabs([
+        "Executive Dashboard",
         "Operations Hub",
         "Revenue Analytics",
         "Tips & Staff",
         "AI Business Advisor"
     ])
 
+    with tab_exec:
+        render_executive_dashboard(user)
     with tab_sec:
         render_security_feed(user)
     with tab_analytics:
@@ -48,6 +51,270 @@ def render_manager_view(user):
         render_tips_dashboard()
     with tab_copilot:
         render_ai_copilot()
+
+
+def render_executive_dashboard(user):
+    st.markdown("<h2 style='font-weight:700; color:#FAFAFA; font-size:1.2rem; margin-bottom:16px;'>Executive Dashboard</h2>", unsafe_allow_html=True)
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COALESCE(SUM(total),0) FROM orders WHERE status='completed' AND created_at >= datetime('now', '-7 days')")
+    weekly_rev = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM orders WHERE created_at >= datetime('now', '-7 days')")
+    weekly_orders = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM orders WHERE status='completed' AND created_at >= datetime('now', '-7 days')")
+    completed_orders = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM security_alerts WHERE status='active'")
+    active_alerts = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM inventory WHERE current_quantity <= min_threshold")
+    low_stock_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM queue WHERE status='waiting'")
+    queue_size = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM restaurant_tables WHERE status='available'")
+    available_tables = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM restaurant_tables")
+    total_tables = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM reservations WHERE status='confirmed' AND reservation_time >= datetime('now')")
+    upcoming_reservations = cursor.fetchone()[0]
+
+    cursor.execute("""
+        SELECT COUNT(*) as cnt FROM orders
+        WHERE status='pending' OR status='preparing'
+    """)
+    kitchen_load = cursor.fetchone()[0]
+
+    cursor.execute("""
+        SELECT COALESCE(SUM(total),0) FROM orders
+        WHERE status='voided' AND created_at >= datetime('now', '-7 days')
+    """)
+    voided_value = cursor.fetchone()[0]
+
+    cursor.execute("""
+        SELECT COALESCE(AVG(completed_at - prepping_at), 0) FROM orders
+        WHERE status='completed' AND prepping_at IS NOT NULL AND completed_at IS NOT NULL
+    """)
+
+    conn.close()
+
+    revenue_target = 5000
+    health_score = 100
+    health_score -= min(active_alerts * 8, 40)
+    health_score -= min(low_stock_count * 5, 20)
+    health_score -= min(queue_size * 2, 10)
+    if kitchen_load > 0:
+        health_score -= 5
+    health_score = max(health_score, 0)
+
+    health_color = EMERALD if health_score >= 80 else AMBER if health_score >= 50 else ROSE
+    health_emoji = "🟢" if health_score >= 80 else "🟡" if health_score >= 50 else "🔴"
+    health_label = "Excellent" if health_score >= 80 else "Needs Attention" if health_score >= 50 else "Critical"
+
+    st.markdown(f"""
+    <div style="display:grid; grid-template-columns: 1fr 2fr; gap:20px; margin-bottom:20px;">
+        <div class="glass-card" style="text-align:center; padding:32px;">
+            <div style="font-size:0.75rem; color:#71717A; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;">Restaurant Health</div>
+            <div style="font-size:3rem; font-weight:800; color:{health_color}; line-height:1;">{health_score}</div>
+            <div style="font-size:0.82rem; color:{health_color}; margin-top:4px;">{health_emoji} {health_label}</div>
+            <div style="margin-top:16px; font-size:0.75rem; color:#71717A;">
+                {active_alerts} alerts · {low_stock_count} low stock · {queue_size} in queue
+            </div>
+        </div>
+        <div class="glass-card" style="padding:24px;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px;">
+                <div style="text-align:center;">
+                    <div style="font-size:0.7rem; color:#71717A; font-weight:500; text-transform:uppercase; letter-spacing:0.05em;">7-Day Revenue</div>
+                    <div style="font-size:1.6rem; font-weight:700; color:#C9A86A; margin:4px 0;">${weekly_rev:,.0f}</div>
+                    <div style="font-size:0.75rem; color:#71717A;">{weekly_orders} total orders</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:0.7rem; color:#71717A; font-weight:500; text-transform:uppercase; letter-spacing:0.05em;">Tables</div>
+                    <div style="font-size:1.6rem; font-weight:700; color:#3B82F6; margin:4px 0;">{available_tables}/{total_tables}</div>
+                    <div style="font-size:0.75rem; color:#71717A;">available</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:0.7rem; color:#71717A; font-weight:500; text-transform:uppercase; letter-spacing:0.05em;">Kitchen</div>
+                    <div style="font-size:1.6rem; font-weight:700; color:{AMBER if kitchen_load > 3 else EMERALD}; margin:4px 0;">{kitchen_load}</div>
+                    <div style="font-size:0.75rem; color:#71717A;">orders in progress</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    mid_cols = st.columns(3)
+    with mid_cols[0]:
+        from components.ui_helpers import show_metric_card
+        show_metric_card("Weekly Revenue", f"${weekly_rev:,.2f}", "", "gold")
+    with mid_cols[1]:
+        show_metric_card("Revenue Target", f"${revenue_target:,.0f}", "", "emerald")
+    with mid_cols[2]:
+        pct = (weekly_rev / revenue_target * 100) if revenue_target else 0
+        show_metric_card("Target Progress", f"{pct:.0f}%", "", "blue")
+
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+        <div style="width:6px; height:6px; border-radius:50%; background:#C9A86A; box-shadow:0 0 8px rgba(201,168,106,0.3);"></div>
+        <span style="font-size:0.85rem; color:#A1A1AA; font-weight:500;">Presentation Mode</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    demo_cols = st.columns(4)
+    with demo_cols[0]:
+        if st.button("🚀 Populate Demo Data", use_container_width=True):
+            with st.spinner("Generating demo data..."):
+                from mock_data import seed_db
+                seed_db()
+                simulate_lunch_rush()
+            st.success("Demo data populated! 15+ orders, alerts, and inventory simulated.")
+            st.rerun()
+    with demo_cols[1]:
+        if st.button("⚡ Simulate Lunch Rush", use_container_width=True):
+            with st.spinner("Simulating lunch rush..."):
+                simulate_lunch_rush()
+            st.success("Lunch rush simulated! Check Operations Hub for alerts.")
+            st.rerun()
+    with demo_cols[2]:
+        if st.button("📋 Generate Sample Report", use_container_width=True):
+            ans, df = query_database_copilot("Show me a full business summary", include_data=True)
+            st.session_state.copilot_messages = [
+                {"role": "user", "text": "Show me a full business summary"},
+                {"role": "assistant", "text": ans, "df": df}
+            ]
+            st.success("Report generated! Switch to AI Business Advisor tab.")
+    with demo_cols[3]:
+        if st.button("🧹 Reset & Fresh Start", use_container_width=True):
+            import os
+            db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resto_integrity.db")
+            if os.path.exists(db_path):
+                os.remove(db_path)
+            from database import init_db, migrate_db
+            init_db()
+            migrate_db()
+            from mock_data import seed_db
+            seed_db()
+            st.success("Database reset with fresh demo data!")
+            st.rerun()
+
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+        <div style="width:6px; height:6px; border-radius:50%; background:#EF4444; box-shadow:0 0 8px rgba(239,68,68,0.3);"></div>
+        <span style="font-size:0.85rem; color:#A1A1AA; font-weight:500;">Kitchen Bottleneck Detection</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    bottlenecks = detect_kitchen_bottlenecks()
+    if bottlenecks:
+        bc_cols = st.columns(len(bottlenecks))
+        for bi, b in enumerate(bottlenecks):
+            sev_color = EMERALD if b['severity'] == 'good' else AMBER if b['severity'] == 'warning' else ROSE
+            sev_icon = "✅" if b['severity'] == 'good' else "⚠️" if b['severity'] == 'warning' else "🔴"
+            with bc_cols[bi]:
+                st.markdown(f"""
+                <div class="glass-card" style="text-align:center; padding:16px; border-left:3px solid {sev_color};">
+                    <div style="font-size:0.7rem; color:#71717A; font-weight:500; text-transform:uppercase; letter-spacing:0.05em;">{b['type'].replace('_', ' ').title()}</div>
+                    <div style="font-size:1.6rem; font-weight:700; color:{sev_color}; margin:4px 0;">{b['value']}</div>
+                    <div style="font-size:0.72rem; color:#A1A1AA;">{b['detail']}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+    notifs = generate_smart_notifications()
+    if notifs:
+        st.markdown("""
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+            <div style="width:6px; height:6px; border-radius:50%; background:#3B82F6; box-shadow:0 0 8px rgba(59,130,246,0.3);"></div>
+            <span style="font-size:0.85rem; color:#A1A1AA; font-weight:500;">AI-Generated Smart Notifications</span>
+        </div>
+        """, unsafe_allow_html=True)
+        for title, msg, ntype, role in notifs:
+            type_colors = {"info": "#3B82F6", "success": "#22C55E", "warning": "#F59E0B", "alert": "#EF4444"}
+            nc = type_colors.get(ntype, "#71717A")
+            st.markdown(f"""
+            <div style="border-left:3px solid {nc}; background:#1F1F23; border-radius:12px; padding:12px; margin-bottom:8px;">
+                <div style="display:flex; justify-content:space-between;">
+                    <strong style="color:#FAFAFA; font-size:0.85rem;">{title}</strong>
+                    <span class="badge badge-blue" style="font-size:0.6rem;">{role}</span>
+                </div>
+                <p style="color:#A1A1AA; font-size:0.78rem; margin:2px 0 0;">{msg}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+
+def simulate_lunch_rush():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    now_str = datetime.now().isoformat()
+
+    rush_orders = [
+        ("Table 2", [(1, 2, 12.0), (5, 2, 6.0)], "alice", "pending"),
+        ("Table 3", [(2, 1, 18.0), (6, 1, 8.0)], "bob", "pending"),
+        ("Table 4", [(3, 1, 45.0), (4, 1, 10.0)], "alice", "preparing"),
+        ("Table 5", [(1, 1, 12.0), (2, 1, 18.0)], "charlie", "pending"),
+        ("Table 7", [(3, 2, 45.0), (6, 2, 8.0), (5, 1, 6.0)], "bob", "preparing"),
+    ]
+
+    for table, items, server, status in rush_orders:
+        subtotal = sum(qty * price for _, qty, price in items)
+        tax = round(subtotal * 0.0875, 2)
+        total = round(subtotal + tax, 2)
+        cursor.execute(
+            "INSERT INTO orders (table_number, status, subtotal, discount, total, tax, tip, payment_method, served_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (table, status, subtotal, 0.0, total, tax, 0.0, None, server, now_str)
+        )
+        order_id = cursor.lastrowid
+        for item_id, qty, price in items:
+            cursor.execute("INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price) VALUES (?, ?, ?, ?)",
+                           (order_id, item_id, qty, price))
+
+    from integrity_engine import check_void_anomaly, check_discount_anomaly, check_shrinkage_anomaly
+
+    check_void_anomaly(cursor.lastrowid, "bob", "pending")
+
+    discount_check_id = cursor.lastrowid
+    conn2 = get_db_connection()
+    cur2 = conn2.cursor()
+    check_discount_anomaly(discount_check_id, "alice", 40.0)
+    conn2.close()
+
+    check_shrinkage_anomaly("Potatoes", 8.0, "chef_ramsay")
+
+    cursor.execute("UPDATE inventory SET current_quantity = current_quantity - 2 WHERE item_name = 'Potatoes'")
+    cursor.execute("UPDATE inventory SET current_quantity = current_quantity - 1.5 WHERE item_name = 'Ramen Noodles'")
+    cursor.execute("UPDATE inventory SET current_quantity = current_quantity - 1 WHERE item_name = 'Wagyu Ribeye Cut'")
+
+    queue_entries = [
+        ("John Doe", "555-0101", 4, 2, "waiting"),
+        ("Jane Smith", "555-0102", 2, 3, "waiting"),
+        ("Mike Johnson", "555-0103", 6, 1, "waiting"),
+    ]
+    cursor.execute("SELECT COALESCE(MAX(position), 0) + 1 FROM queue")
+    next_pos = cursor.fetchone()[0]
+    for i, (name, phone, party, table_id, status) in enumerate(queue_entries):
+        cursor.execute(
+            "INSERT INTO queue (customer_name, phone, party_size, table_id, status, position, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (name, phone, party, table_id, status, next_pos + i, now_str)
+        )
+
+    from database import add_notification
+    add_notification("Lunch Rush Peak", "High order volume detected. 5 orders in 2 minutes.", "warning", role="admin")
+    add_notification("Kitchen Alert", "Order volume exceeds normal threshold. Consider additional prep staff.", "alert", role="kitchen")
+
+    conn.commit()
+    conn.close()
 
 
 def render_security_feed(user):
@@ -224,12 +491,12 @@ def render_customer_list():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT u.full_name, u.username, u.role,
+        SELECT u.full_name, u.email, u.role,
                COUNT(o.id) as order_count,
                COALESCE(SUM(CASE WHEN o.status = 'completed' THEN o.total ELSE 0 END), 0) as total_spent,
                MAX(o.created_at) as last_order
         FROM users u
-        LEFT JOIN orders o ON u.username = o.served_by
+        LEFT JOIN orders o ON u.email = o.served_by
         WHERE u.role = 'customer'
         GROUP BY u.id
         ORDER BY total_spent DESC
@@ -258,7 +525,7 @@ def render_customer_list():
                         <span style="color:#C9A86A; font-weight:600;">${c['total_spent']:.2f}</span>
                     </div>
                     <div style="font-size:0.75rem; color:#71717A; margin-top:2px;">
-                        {c['order_count']} orders &middot; {c.get('username', '')}
+                        {c['order_count']} orders &middot; {c.get('email', '')}
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -539,21 +806,45 @@ def render_analytics():
         }), use_container_width=True, hide_index=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown("<h4 style='color:#A1A1AA; font-weight:600; font-size:0.9rem; margin:20px 0 12px;'>AI Stockout Forecast</h4>", unsafe_allow_html=True)
-        sel = st.selectbox("", [r['item_name'] for r in inv_rows], key="forecast_sel", label_visibility="collapsed", placeholder="Select ingredient...")
-        if st.button("Forecast Depletion", use_container_width=True):
-            item_data = next((r for r in inv_rows if r['item_name'] == sel), None)
-            if item_data:
-                with st.spinner("Analyzing..."):
-                    fc = get_demand_forecast(sel, item_data['current_quantity'])
-                fc1, fc2 = st.columns([1, 2])
-                with fc1:
-                    st.markdown(f"<span style='color:#A1A1AA; font-size:0.85rem;'>Days to Stockout: <span style='color:#FAFAFA; font-weight:600;'>{fc.get('predicted_runout_days')}</span></span>", unsafe_allow_html=True)
-                    risk = fc.get('risk_level', '')
-                    risk_color = ROSE if 'high' in risk.lower() else AMBER if 'medium' in risk.lower() else EMERALD
-                    st.markdown(f"<span style='color:#A1A1AA; font-size:0.85rem;'>Risk: <span style='color:{risk_color}; font-weight:600;'>{risk}</span></span>", unsafe_allow_html=True)
-                with fc2:
-                    st.markdown(f"<div class='glass-card-subtle' style='padding:12px;'><p style='color:#A1A1AA; font-size:0.82rem; margin:0;'>{fc.get('explanation', '')}</p></div>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color:#A1A1AA; font-weight:600; font-size:0.9rem; margin:20px 0 12px;'>AI Smart Stockout Forecast</h4>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#71717A; font-size:0.78rem; margin-bottom:12px;'>Predictions based on actual sales velocity from the last 30 days.</p>", unsafe_allow_html=True)
+
+        forecast_data = get_smart_inventory_forecast()
+        if forecast_data:
+            df_fc = pd.DataFrame(forecast_data)
+            risk_order = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
+            df_fc['risk_score'] = df_fc['risk_level'].map(risk_order)
+            df_fc = df_fc.sort_values('risk_score')
+
+            fig_fc = px.bar(df_fc, x='item_name', y='predicted_runout_days',
+                            color='risk_level',
+                            title='Days Until Stockout by Ingredient',
+                            labels={'predicted_runout_days': 'Days', 'item_name': 'Ingredient', 'risk_level': 'Risk'},
+                            template='plotly_dark',
+                            color_discrete_map={'Critical': ROSE, 'High': AMBER, 'Medium': GOLD, 'Low': EMERALD})
+            fig_fc.update_traces(hovertemplate='<b>%{x}</b><br>Days: %{y}<br>Risk: %{customdata}<extra></extra>')
+            fig_fc.update_layout(**DARK_TEMPLATE, xaxis_tickangle=-30, showlegend=True)
+            st.plotly_chart(fig_fc, use_container_width=True)
+
+            critical = df_fc[df_fc['risk_level'].isin(['Critical', 'High'])]
+            if not critical.empty:
+                st.markdown(f"""
+                <div style="background:#1A1111; border:1px solid rgba(239,68,68,0.15); border-radius:14px; padding:14px; margin-bottom:16px;">
+                    <p style="color:#EF4444; font-weight:600; font-size:0.85rem; margin:0;">
+                        ⚠️ {len(critical)} items at risk of stockout within 4 days
+                    </p>
+                    <p style="color:#A1A1AA; font-size:0.78rem; margin:4px 0 0;">
+                        {', '.join(critical['item_name'].tolist())}
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+
+            st.markdown("<div class='glass-card' style='padding:0; overflow:hidden;'>", unsafe_allow_html=True)
+            st.dataframe(df_fc[['item_name', 'current_qty', 'threshold', 'daily_consumption', 'predicted_runout_days', 'risk_level']].rename(columns={
+                'item_name': 'Ingredient', 'current_qty': 'Stock', 'threshold': 'Min',
+                'daily_consumption': 'Daily Use', 'predicted_runout_days': 'Days Left', 'risk_level': 'Risk'
+            }), use_container_width=True, hide_index=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("<h4 style='color:#A1A1AA; font-weight:600; font-size:0.9rem; margin:20px 0 12px;'>Physical Stock Count</h4>", unsafe_allow_html=True)
         uc1, uc2, uc3 = st.columns(3)
@@ -669,37 +960,56 @@ def render_tips_dashboard():
 
 
 def render_ai_copilot():
-    st.markdown("<h3 style='color:#FAFAFA; font-weight:600; font-size:1.1rem; margin-bottom:4px;'>AI Business Advisor</h3>", unsafe_allow_html=True)
-    st.markdown("<p style='color:#71717A; font-size:0.82rem; margin-bottom:20px;'>Ask about sales trends, inventory, tips, or operational patterns.</p>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color:#FAFAFA; font-weight:600; font-size:1.1rem; margin-bottom:4px;'>AI Restaurant Copilot</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#71717A; font-size:0.82rem; margin-bottom:20px;'>Ask anything about your restaurant — sales, inventory, tips, menu performance, reservations, and more.</p>", unsafe_allow_html=True)
 
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    st.markdown("""
+    <div style="background:linear-gradient(135deg,rgba(201,168,106,0.08),rgba(201,168,106,0.02));
+         border:1px solid rgba(201,168,106,0.15); border-radius:16px; padding:16px; margin-bottom:20px;
+         display:flex; align-items:flex-start; gap:12px;">
+        <div style="width:32px; height:32px; border-radius:8px; background:#C9A86A; display:flex;
+             align-items:center; justify-content:center; flex-shrink:0; margin-top:2px;">
+            <span style="color:#09090B; font-weight:800; font-size:0.9rem;">AI</span>
+        </div>
+        <div>
+            <p style="color:#A1A1AA; font-size:0.82rem; margin:0;">
+                The Copilot queries live data from orders, inventory, alerts, tips, reservations, and queue.
+                Results include data tables and charts automatically.
+            </p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    for role, text in st.session_state.messages:
-        with st.chat_message(role):
-            st.markdown(f"<div class='glass-card-subtle' style='padding:12px; margin-bottom:4px;'><p style='color:#FAFAFA; font-size:0.85rem; margin:0;'>{text}</p></div>", unsafe_allow_html=True)
+    if "copilot_messages" not in st.session_state:
+        st.session_state.copilot_messages = []
 
-    chips = ["Audit Bob's voids", "What's low on stock?", "Show tip earnings", "Draft a restock list"]
+    for msg in st.session_state.copilot_messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(f"<div class='glass-card-subtle' style='padding:12px; margin-bottom:4px;'><p style='color:#FAFAFA; font-size:0.85rem; margin:0;'>{msg['text']}</p></div>", unsafe_allow_html=True)
+            if msg.get("df") is not None and not msg["df"].empty:
+                st.dataframe(msg["df"], use_container_width=True, hide_index=True)
+
+    chips = [
+        ("📊 Revenue snapshot", "Show me revenue and sales"),
+        ("📦 Low stock items", "What's low on stock?"),
+        ("🏆 Top selling items", "What are the best selling menu items?"),
+        ("👨‍🍳 Staff tips", "Show tip earnings by staff"),
+        ("🔔 Active alerts", "Show me active alerts"),
+    ]
     cols = st.columns(len(chips))
-    for col, chip_text in zip(cols, chips):
+    for col, (label, query) in zip(cols, chips):
         with col:
-            if st.button(chip_text, use_container_width=True):
-                st.session_state.messages.append(("user", chip_text))
-                with st.spinner("Thinking..."):
-                    res = ask_manager_assistant(st.session_state.messages[:-1], chip_text)
-                st.session_state.messages.append(("assistant", res))
+            if st.button(label, key=f"chip_{query[:10]}", use_container_width=True):
+                ans, df = query_database_copilot(query, include_data=True)
+                st.session_state.copilot_messages.append({"role": "user", "text": query})
+                st.session_state.copilot_messages.append({"role": "assistant", "text": ans, "df": df})
                 st.rerun()
 
-    if prompt := st.chat_input("Ask about sales, inventory, tips..."):
-        st.session_state.messages.append(("user", prompt))
-        with st.chat_message("user"):
-            st.markdown(f"<div class='glass-card-subtle' style='padding:12px; margin-bottom:4px;'><p style='color:#FAFAFA; font-size:0.85rem; margin:0;'>{prompt}</p></div>", unsafe_allow_html=True)
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                res = ask_manager_assistant(st.session_state.messages[:-1], prompt)
-            st.markdown(f"<div class='glass-card-subtle' style='padding:12px; margin-bottom:4px;'><p style='color:#FAFAFA; font-size:0.85rem; margin:0;'>{res}</p></div>", unsafe_allow_html=True)
-            st.session_state.messages.append(("assistant", res))
-            st.rerun()
+    if prompt := st.chat_input("Ask the Copilot..."):
+        ans, df = query_database_copilot(prompt, include_data=True)
+        st.session_state.copilot_messages.append({"role": "user", "text": prompt})
+        st.session_state.copilot_messages.append({"role": "assistant", "text": ans, "df": df})
+        st.rerun()
 
 
 def update_alert_status(alert_id, status):

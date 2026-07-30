@@ -9,6 +9,7 @@ def get_db_connection():
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA journal_mode=WAL")
     return conn
 
 def init_db():
@@ -18,12 +19,67 @@ def init_db():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        role TEXT NOT NULL,
-        full_name TEXT NOT NULL
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT,
+        full_name TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'staff',
+        avatar_url TEXT,
+        google_id TEXT UNIQUE,
+        email_verified INTEGER DEFAULT 0,
+        is_active INTEGER DEFAULT 1,
+        last_login TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
     )
     """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS user_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        session_token TEXT UNIQUE NOT NULL,
+        ip_address TEXT,
+        device_info TEXT,
+        is_active INTEGER DEFAULT 1,
+        created_at TEXT NOT NULL,
+        last_activity TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS otp_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL,
+        otp_hash TEXT NOT NULL,
+        purpose TEXT NOT NULL DEFAULT 'login',
+        attempts_remaining INTEGER NOT NULL DEFAULT 5,
+        expires_at TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        verified_at TEXT
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS login_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        email TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        status TEXT NOT NULL,
+        ip_address TEXT,
+        device_info TEXT,
+        details TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_login_history_email ON login_history(email)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_login_history_user ON login_history(user_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_otp_requests_email ON otp_requests(email)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id)")
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS menu_items (

@@ -1,23 +1,25 @@
 import streamlit as st
 import os
-import random
-import hashlib
-import sqlite3
-from database import get_db_connection, init_db, migrate_db
-from mock_data import seed_db, _hash
+from datetime import datetime
+from database import get_db_connection, init_db, migrate_db, add_notification, get_notifications, unread_notification_count, mark_notification_read
+from mock_data import seed_db
 from components.ui_helpers import inject_custom_css
 from components.customer_view import render_customer_view
 from components.kitchen_view import render_kitchen_view
 from components.manager_view import render_manager_view
 from components.reservations_view import render_reservation_view
 from components.queue_view import render_queue_view
-from database import add_notification, get_notifications, unread_notification_count, mark_notification_read
+from authentication import (
+    request_otp, verify_otp_and_login, login_with_google, logout,
+    is_google_oauth_configured, get_google_auth_url, set_login_context,
+)
+from session_manager import validate_session, deactivate_session
 
 st.set_page_config(
     page_title="RestoIntegrity OS",
     page_icon="\u2699\ufe0f",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 init_db()
@@ -25,173 +27,459 @@ migrate_db()
 seed_db()
 inject_custom_css()
 
-def lookup_user(email):
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT username, full_name, role FROM users WHERE username = ?", (email,))
-        user = cursor.fetchone()
-        conn.close()
-        return dict(user) if user else None
-    except Exception:
-        return None
+set_login_context(device="Streamlit Web App")
 
-def sign_in_user(email):
-    user_data = lookup_user(email)
-    if user_data:
-        st.session_state.user = {
-            "id": 0,
-            "username": user_data["username"],
-            "role": user_data["role"],
-            "full_name": user_data["full_name"],
-        }
-        return True
+
+def try_restore_session():
+    token = st.session_state.get("session_token")
+    if token:
+        user = validate_session(token)
+        if user:
+            st.session_state.user = user
+            st.session_state.session_token = token
+            return True
+        else:
+            st.session_state.pop("session_token", None)
+            st.session_state.pop("user", None)
+            st.session_state["session_expired"] = True
+            st.rerun()
     return False
 
-def generate_otp():
-    return str(random.randint(100000, 999999))
 
 def render_login_page():
-    col1, col2, col3 = st.columns([1, 1.2, 1])
-    with col2:
-        st.markdown("""
-        <div style="background: #18181B; border-radius: 24px; padding: 48px 40px;
-             box-shadow: 0 24px 80px rgba(0,0,0,0.5);
-             border: 1px solid rgba(255,255,255,0.06);
-             animation: fadeInUp 0.6s ease-out; margin-top: 40px;">
-            <div style="text-align:center; margin-bottom: 28px;">
-                <div style="width:48px; height:48px; border-radius:14px; background:#C9A86A;
-                    display:flex; align-items:center; justify-content:center; margin:0 auto 16px;
-                    box-shadow: 0 8px 24px rgba(201,168,106,0.15);">
-                    <span style="color:#09090B; font-weight:800; font-size:1.4rem;">R</span>
-                </div>
-                <h2 style="color:#FAFAFA; margin: 0 0 4px; font-weight:700;
-                    font-family:Manrope, sans-serif; font-size:1.5rem; letter-spacing:0.02em;">RestoIntegrity OS</h2>
-                <p style="color:#71717A; font-size:0.82rem; margin:0; font-weight:400; letter-spacing:0.02em;">
-                    AI-Powered Restaurant Operations
-                </p>
+    inject_auth_css()
+
+    page = st.session_state.get("login_page", "main")
+
+    # ─── Background Layer ──────────────────────────────────────────────────
+    st.markdown("""
+    <div class="auth-bg">
+        <div class="auth-bg-grid"></div>
+        <div class="auth-bg-glow"></div>
+        <div class="auth-bg-glow-2"></div>
+        <div class="auth-bg-glow-3"></div>
+        <div class="auth-bg-circle auth-bg-circle-1"></div>
+        <div class="auth-bg-circle auth-bg-circle-2"></div>
+        <div class="auth-bg-circle auth-bg-circle-3"></div>
+        <div class="auth-bg-ray auth-bg-ray-1"></div>
+        <div class="auth-bg-ray auth-bg-ray-2"></div>
+        <div class="auth-bg-ray auth-bg-ray-3"></div>
+        <div class="auth-particle"></div><div class="auth-particle"></div><div class="auth-particle"></div>
+        <div class="auth-particle"></div><div class="auth-particle"></div><div class="auth-particle"></div>
+        <div class="auth-particle"></div><div class="auth-particle"></div><div class="auth-particle"></div>
+        <div class="auth-particle"></div><div class="auth-particle"></div><div class="auth-particle"></div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ─── Split Screen ─────────────────────────────────────────────────────
+    st.markdown('<div class="auth-split">', unsafe_allow_html=True)
+
+    # ═══════════ LEFT HERO (60%) ═════════════════════════════════════════
+    st.markdown("""
+    <div class="auth-hero">
+        <div class="auth-hero-inner">
+    """, unsafe_allow_html=True)
+
+    # Logo
+    st.markdown("""
+    <div class="auth-hero-section">
+        <div class="auth-logo-row">
+            <div class="auth-logo-icon"><span>R</span></div>
+            <div class="auth-logo-text">
+                <div class="auth-logo-name">RestoIntegrity OS</div>
+                <div class="auth-logo-sub">AI-Powered Restaurant Operations</div>
             </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Hero heading
+    st.markdown("""
+    <div class="auth-hero-section">
+        <div class="auth-heading">
+            <h1>Run Smarter.<br><span class="gold">Serve Better.</span></h1>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Description
+    st.markdown("""
+    <div class="auth-hero-section">
+        <p class="auth-desc">
+            The all-in-one AI platform for managing restaurant operations,
+            reducing wait times, predicting inventory, and improving customer experience.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Feature cards
+    st.markdown("""
+    <div class="auth-hero-section">
+        <div class="auth-features">
+            <div class="auth-fcard">
+                <div class="auth-fcard-icon" style="background:rgba(201,168,106,0.1);color:#C9A86A;">&#9889;</div>
+                <div class="auth-fcard-title">AI Insights</div>
+                <div class="auth-fcard-desc">Predict demand and optimize pricing</div>
+            </div>
+            <div class="auth-fcard">
+                <div class="auth-fcard-icon" style="background:rgba(34,197,94,0.1);color:#22C55E;">&#127859;</div>
+                <div class="auth-fcard-title">Live Kitchen</div>
+                <div class="auth-fcard-desc">Real-time order tracking &amp; alerts</div>
+            </div>
+            <div class="auth-fcard">
+                <div class="auth-fcard-icon" style="background:rgba(59,130,246,0.1);color:#3B82F6;">&#128203;</div>
+                <div class="auth-fcard-title">Smart Queue</div>
+                <div class="auth-fcard-desc">Intelligent waitlist management</div>
+            </div>
+            <div class="auth-fcard">
+                <div class="auth-fcard-icon" style="background:rgba(168,85,247,0.1);color:#A855F7;">&#128200;</div>
+                <div class="auth-fcard-title">Inventory AI</div>
+                <div class="auth-fcard-desc">Auto-reorder &amp; waste reduction</div>
+            </div>
+            <div class="auth-fcard">
+                <div class="auth-fcard-icon" style="background:rgba(245,158,11,0.1);color:#F59E0B;">&#128197;</div>
+                <div class="auth-fcard-title">Reservations</div>
+                <div class="auth-fcard-desc">Smart table &amp; guest management</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Dashboard preview
+    st.markdown("""
+    <div class="auth-hero-section">
+        <div class="auth-preview">
+            <div class="auth-preview-top">
+                <div class="auth-preview-top-left">
+                    <span>Dashboard Overview</span>
+                </div>
+                <div class="auth-preview-live">
+                    <div class="auth-preview-live-dot"></div>
+                    LIVE
+                </div>
+            </div>
+            <div class="auth-preview-grid">
+                <div class="auth-preview-metric">
+                    <div class="auth-preview-metric-label">Today's Revenue</div>
+                    <div class="auth-preview-metric-value gold">$14,280</div>
+                    <div class="auth-preview-chart">
+                        <div class="auth-preview-chart-bar"></div>
+                        <div class="auth-preview-chart-bar"></div>
+                        <div class="auth-preview-chart-bar"></div>
+                        <div class="auth-preview-chart-bar"></div>
+                        <div class="auth-preview-chart-bar"></div>
+                        <div class="auth-preview-chart-bar"></div>
+                        <div class="auth-preview-chart-bar"></div>
+                    </div>
+                </div>
+                <div class="auth-preview-metric">
+                    <div class="auth-preview-metric-label">Orders Today</div>
+                    <div class="auth-preview-metric-value">342</div>
+                    <div class="auth-preview-chart">
+                        <div class="auth-preview-chart-bar" style="background:linear-gradient(to top,rgba(59,130,246,0.15),rgba(59,130,246,0.35));"></div>
+                        <div class="auth-preview-chart-bar" style="background:linear-gradient(to top,rgba(59,130,246,0.15),rgba(59,130,246,0.35));"></div>
+                        <div class="auth-preview-chart-bar" style="background:linear-gradient(to top,rgba(59,130,246,0.15),rgba(59,130,246,0.35));"></div>
+                        <div class="auth-preview-chart-bar" style="background:linear-gradient(to top,rgba(59,130,246,0.15),rgba(59,130,246,0.35));"></div>
+                        <div class="auth-preview-chart-bar" style="background:linear-gradient(to top,rgba(59,130,246,0.15),rgba(59,130,246,0.35));"></div>
+                        <div class="auth-preview-chart-bar" style="background:linear-gradient(to top,rgba(59,130,246,0.15),rgba(59,130,246,0.35));"></div>
+                        <div class="auth-preview-chart-bar" style="background:linear-gradient(to top,rgba(59,130,246,0.15),rgba(59,130,246,0.35));"></div>
+                    </div>
+                </div>
+                <div class="auth-preview-metric">
+                    <div class="auth-preview-metric-label">Reservations</div>
+                    <div class="auth-preview-metric-value purple">128</div>
+                    <svg width="100%" height="28" viewBox="0 0 180 28" style="margin-top:6px;">
+                        <path d="M0,22 Q15,8 30,18 T60,12 T90,20 T120,8 T150,16 T180,10" fill="none" stroke="#A855F7" stroke-width="2" stroke-opacity="0.4"/>
+                        <path d="M0,22 Q15,8 30,18 T60,12 T90,20 T120,8 T150,16 T180,10" fill="none" stroke="#A855F7" stroke-width="1.5" class="auth-preview-svg-line"/>
+                    </svg>
+                </div>
+                <div class="auth-preview-metric">
+                    <div class="auth-preview-metric-label">Kitchen Status</div>
+                    <div class="auth-preview-metric-value green">94%</div>
+                    <div style="display:flex;gap:4px;margin-top:6px;">
+                        <div style="flex:1;height:4px;border-radius:4px;background:rgba(255,255,255,0.06);overflow:hidden;">
+                            <div style="width:94%;height:100%;border-radius:4px;background:linear-gradient(90deg,#22C55E,#16A34A);"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="auth-preview-bottom">
+                <div class="auth-preview-bottom-item">
+                    <div class="val gold">$52.3K</div>
+                    <div class="lbl">Weekly Revenue</div>
+                </div>
+                <div class="auth-preview-bottom-item">
+                    <div class="val">1,892</div>
+                    <div class="lbl">Weekly Orders</div>
+                </div>
+                <div class="auth-preview-bottom-item">
+                    <div class="val green">12.4m</div>
+                    <div class="lbl">Avg Prep Time</div>
+                </div>
+                <div class="auth-preview-bottom-item">
+                    <div class="val blue">4.8</div>
+                    <div class="lbl">Rating</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Statistics row
+    st.markdown("""
+    <div class="auth-hero-section">
+        <div class="auth-stats">
+            <div class="auth-stat">
+                <div class="auth-stat-value">99.9%</div>
+                <div class="auth-stat-label">Uptime SLA</div>
+            </div>
+            <div class="auth-stat">
+                <div class="auth-stat-value">10K<span style="color:#52525B;font-size:1rem;">+</span></div>
+                <div class="auth-stat-label">Restaurants</div>
+            </div>
+            <div class="auth-stat">
+                <div class="auth-stat-value gold">35%</div>
+                <div class="auth-stat-label">Reduced Wait Time</div>
+            </div>
+            <div class="auth-stat">
+                <div class="auth-stat-value">4.8<span style="color:#C9A86A;font-size:1rem;">&#9733;</span></div>
+                <div class="auth-stat-label">Customer Rating</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Social proof
+    st.markdown("""
+    <div class="auth-hero-section">
+        <div class="auth-social">
+            <span class="auth-social-label">Trusted by</span>
+            <span class="auth-social-name">Barbeque Nation</span>
+            <span class="auth-social-name">Mainland China</span>
+            <span class="auth-social-name">Haldiram</span>
+            <span class="auth-social-name">Cafe Coffee Day</span>
+            <span class="auth-social-name">Biryani By Kilo</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Close left hero
+    st.markdown("""
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ═══════════ RIGHT AUTH PANEL (40%) ══════════════════════════════════
+    st.markdown("""
+    <div class="auth-panel">
+        <div class="auth-panel-inner">
+            <div class="auth-card">
+    """, unsafe_allow_html=True)
+
+    if page == "main":
+        # Hex logo
+        st.markdown("""
+        <div class="auth-card-logo">
+            <div class="auth-card-logo-hex">
+                <div class="auth-card-logo-hex-inner"><span>R</span></div>
+            </div>
+        </div>
         """, unsafe_allow_html=True)
 
-        page = st.session_state.get("login_page", "main")
+        st.markdown("""
+        <div class="auth-card-heading">
+            <h2>Welcome Back</h2>
+        </div>
+        <p class="auth-card-subtitle">Sign in to access your restaurant dashboard</p>
+        <div class="auth-card-divider"></div>
+        """, unsafe_allow_html=True)
 
-        if page == "main":
-            st.markdown("""
-            <div style="text-align:center; margin-bottom:24px;">
-                <p style="color:#A1A1AA; font-size:0.85rem; margin:0;">
-                    Sign in to access your dashboard
-                </p>
+        google_configured = is_google_oauth_configured()
+        if google_configured:
+            google_url = get_google_auth_url()
+            if google_url:
+                st.markdown(f"""
+                <a href="{google_url}" target="_self" style="text-decoration:none;">
+                    <button class="auth-google-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                        Continue with Google
+                    </button>
+                </a>
+                """, unsafe_allow_html=True)
+                st.markdown('<div class="auth-divider-or"><div class="auth-divider-or-line"></div><span class="auth-divider-or-text">or</span><div class="auth-divider-or-line"></div></div>', unsafe_allow_html=True)
+
+        if st.button("Continue with Email", key="auth_email_btn", use_container_width=True):
+            st.session_state.login_page = "email"
+            st.rerun()
+
+        # Security row
+        st.markdown("""
+        <div class="auth-security">
+            <div class="auth-security-item">
+                <div class="auth-security-icon">&#128274;</div>
+                <div class="auth-security-title">Secure</div>
+                <div class="auth-security-desc">End-to-end Encryption</div>
             </div>
-            """, unsafe_allow_html=True)
+            <div class="auth-security-item">
+                <div class="auth-security-icon">&#10003;</div>
+                <div class="auth-security-title">Verified</div>
+                <div class="auth-security-desc">OTP Protected</div>
+            </div>
+            <div class="auth-security-item">
+                <div class="auth-security-icon">&#9889;</div>
+                <div class="auth-security-title">Fast</div>
+                <div class="auth-security-desc">Quick Access</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-            if st.button("Continue with Email", key="auth_email_btn", use_container_width=True):
+        # Footer
+        st.markdown("""
+        <div class="auth-card-footer">
+            <p>By signing in you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a></p>
+        </div>
+        <div class="auth-enterprise">
+            <span>Enterprise Grade</span>
+            <span class="auth-enterprise-sep">&#183;</span>
+            <span>Scalable</span>
+            <span class="auth-enterprise-sep">&#183;</span>
+            <span>Reliable</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+    elif page == "email":
+        st.markdown("""
+        <div class="auth-flow-header">
+            <div class="icon-wrap" style="background:rgba(201,168,106,0.1);border-radius:14px;">
+                <span style="font-size:1.2rem;color:#C9A86A;">@</span>
+            </div>
+            <h3>Enter your email</h3>
+            <p>We'll send a verification code</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        email = st.text_input("Email address", placeholder="you@example.com", key="auth_email_input", value=st.session_state.get("auth_email", ""))
+        col_b1, col_b2 = st.columns(2)
+        with col_b1:
+            if st.button("Back", key="auth_email_back", use_container_width=True):
+                st.session_state.login_page = "main"
+                st.session_state.auth_email = ""
+                st.rerun()
+        with col_b2:
+            if st.button("Send Code", key="auth_email_next", type="primary", use_container_width=True):
+                if email:
+                    with st.spinner("Sending verification code..."):
+                        result = request_otp(email)
+                    if result["success"]:
+                        st.session_state.auth_email = email
+                        st.session_state.auth_otp_request_id = result["otp_request_id"]
+                        st.session_state.auth_email_sent_at = datetime.now().isoformat()
+                        st.session_state.login_page = "otp_sent"
+                        st.rerun()
+                    else:
+                        if "cooldown" in result:
+                            st.session_state.auth_cooldown = result["cooldown"]
+                            st.session_state.login_page = "otp_sent"
+                            st.rerun()
+                        else:
+                            st.error(result.get("error", "Could not send verification code."))
+                else:
+                    st.error("Please enter your email.")
+
+    elif page == "otp_sent":
+        email = st.session_state.get("auth_email", "")
+        cooldown_remaining = st.session_state.pop("auth_cooldown", 0)
+
+        st.markdown(f"""
+        <div class="auth-flow-header">
+            <div class="icon-wrap" style="background:rgba(26,24,16,0.8);border:1px solid rgba(201,168,106,0.15);border-radius:50%;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A86A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/>
+                </svg>
+            </div>
+            <h3>Check your email</h3>
+            <p>We sent a verification code to</p>
+            <p style="color:#C9A86A;font-size:0.85rem;font-weight:600;margin:2px 0 0;">{email}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("""
+        <div class="auth-sent-box">
+            <div class="auth-sent-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+            <div class="auth-sent-check">&#10003; Code sent successfully</div>
+            <p class="auth-sent-hint">Expires in 5 minutes. Enter it below.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if cooldown_remaining > 0:
+            st.warning(f"Please wait {cooldown_remaining} seconds before requesting a new code.")
+
+        user_otp = st.text_input("Enter verification code", placeholder="000000", key="auth_otp_input", max_chars=6)
+
+        col_b1, col_b2, col_b3 = st.columns([1, 1, 1])
+        with col_b1:
+            if st.button("Back", key="auth_otp_back", use_container_width=True):
                 st.session_state.login_page = "email"
                 st.rerun()
-
-            st.markdown("""
-            <div style="text-align:center; margin-top:12px;">
-                <p style="color:#52525B; font-size:0.72rem; margin:0;">
-                    Secured with OTP verification
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
-
-        elif page == "email":
-            st.markdown("""
-            <div style="text-align:center; margin-bottom:24px;">
-                <div style="width:40px; height:40px; border-radius:10px; background:#1F1F23;
-                    display:flex; align-items:center; justify-content:center; margin:0 auto 12px;
-                    border:1px solid rgba(255,255,255,0.06);">
-                    <span style="color:#A1A1AA; font-weight:600; font-size:0.9rem;">@</span>
-                </div>
-                <h3 style="color:#FAFAFA; margin:0 0 4px; font-family:Manrope, sans-serif; font-weight:600; font-size:1.05rem;">Enter your email</h3>
-                <p style="color:#71717A; font-size:0.8rem; margin:0;">We'll send a verification code</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            email = st.text_input("Email address", placeholder="you@example.com", key="auth_email_input", value=st.session_state.get("auth_email", ""))
-            col_b1, col_b2 = st.columns(2)
-            with col_b1:
-                if st.button("Back", key="auth_email_back", use_container_width=True):
-                    st.session_state.login_page = "main"
-                    st.session_state.auth_email = ""
-                    st.rerun()
-            with col_b2:
-                if st.button("Send Code", key="auth_email_next", type="primary", use_container_width=True):
-                    if email:
-                        if lookup_user(email):
-                            st.session_state.auth_email = email
-                            st.session_state.auth_otp = generate_otp()
-                            st.session_state.login_page = "otp"
-                            st.rerun()
-                        else:
-                            st.error("No account found with this email.")
+        with col_b2:
+            if st.button("Verify & Sign In", key="auth_otp_verify", type="primary", use_container_width=True, disabled=not user_otp):
+                if user_otp:
+                    with st.spinner("Verifying..."):
+                        result = verify_otp_and_login(email, user_otp)
+                    if result["success"]:
+                        st.session_state.user = {
+                            "id": result["user"]["id"],
+                            "email": result["user"]["email"],
+                            "full_name": result["user"]["full_name"],
+                            "role": result["user"]["role"],
+                            "avatar_url": result["user"].get("avatar_url", ""),
+                        }
+                        st.session_state.session_token = result["session_token"]
+                        st.session_state.pop("auth_email", None)
+                        st.session_state.pop("auth_otp_request_id", None)
+                        st.session_state.pop("auth_email_sent_at", None)
+                        st.rerun()
                     else:
-                        st.error("Please enter your email.")
-
-        elif page == "otp":
-            email = st.session_state.get("auth_email", "")
-            otp = st.session_state.get("auth_otp", "")
-            user_data = lookup_user(email)
-            initials = "".join(p[0] for p in user_data.get("full_name", "?").split()[:2]).upper() if user_data else "?"
-
-            st.markdown(f"""
-            <div style="text-align:center; margin-bottom:20px;">
-                <div style="width:48px; height:48px; border-radius:50%; background:#1F1F23;
-                    display:flex; align-items:center; justify-content:center; font-size:1rem;
-                    font-weight:700; color:#FAFAFA; margin:0 auto 8px;
-                    border:1px solid rgba(201,168,106,0.2); letter-spacing:0.02em;">
-                    {initials}
-                </div>
-                <div style="font-weight:600; color:#FAFAFA; font-size:0.95rem;">{user_data.get('full_name', '') if user_data else ''}</div>
-                <div style="font-size:0.78rem; color:#71717A;">{email}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            st.markdown(f"""
-            <div style="background: #1A1810; border: 1px solid rgba(201,168,106,0.15); border-radius: 14px; padding: 16px; margin-bottom: 20px; text-align:center;">
-                <div style="font-size:0.72rem; color:#C9A86A; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Verification Code</div>
-                <div style="font-size:2rem; font-weight:700; color:#FAFAFA; letter-spacing:0.3em; font-family:monospace;">{otp}</div>
-                <p style="font-size:0.72rem; color:#71717A; margin:6px 0 0;">A verification code has been sent to {email}</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            user_otp = st.text_input("Enter verification code", placeholder="000000", key="auth_otp_input", max_chars=6)
-
-            col_b1, col_b2 = st.columns(2)
-            with col_b1:
-                if st.button("Back", key="auth_otp_back", use_container_width=True):
-                    st.session_state.login_page = "email"
-                    st.rerun()
-            with col_b2:
-                if st.button("Verify & Sign In", key="auth_otp_verify", type="primary", use_container_width=True):
-                    if user_otp == otp:
-                        if sign_in_user(email):
-                            st.session_state.pop("auth_otp", None)
-                            st.session_state.pop("auth_email", None)
-                            st.rerun()
+                        err = result.get("error", "Invalid code. Please try again.")
+                        if "attempts_remaining" in result:
+                            st.error(f"{err} ({result['attempts_remaining']} left)")
                         else:
-                            st.error("Could not sign in. Please try again.")
+                            st.error(err)
+                else:
+                    st.error("Please enter the verification code.")
+        with col_b3:
+            if st.button("Resend Code", key="auth_otp_resend", use_container_width=True):
+                with st.spinner("Sending new code..."):
+                    result = request_otp(email)
+                if result["success"]:
+                    st.success("New code sent!")
+                    st.rerun()
+                else:
+                    if "cooldown" in result:
+                        st.warning(result["error"])
                     else:
-                        st.error("Invalid code. Please try again.")
+                        st.error(result.get("error", "Could not resend code."))
 
-            if st.button("Resend code", key="auth_otp_resend", use_container_width=True):
-                st.session_state.auth_otp = generate_otp()
-                st.rerun()
-
-        st.markdown("""
-        <div style="text-align:center; margin-top:20px;">
-            <p style="font-size:0.72rem; color:#52525B; margin:0; letter-spacing:0.01em;">
-                By signing in, you agree to our Terms and Privacy Policy.
-            </p>
+    # Close card + panel + split
+    st.markdown("""
+            </div>
         </div>
-        </div>
-        """, unsafe_allow_html=True)
+    </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-def get_current_user():
-    return st.session_state.get("user", None)
 
-user = get_current_user()
+if "user" not in st.session_state:
+    try_restore_session()
+
+if st.session_state.pop("session_expired", False):
+    st.warning("Your session has expired. Please sign in again.")
+
+user = st.session_state.get("user")
 
 if not user:
     if "login_page" not in st.session_state:
@@ -199,8 +487,12 @@ if not user:
     render_login_page()
     st.stop()
 
-if "user" in st.session_state and st.sidebar.button("Sign Out", key="logout_btn", use_container_width=True):
+if st.sidebar.button("Sign Out", key="logout_btn", use_container_width=True):
+    token = st.session_state.get("session_token")
+    if token:
+        logout(token)
     st.session_state.pop("user", None)
+    st.session_state.pop("session_token", None)
     st.rerun()
 
 ROLE_MAP = {
@@ -212,14 +504,18 @@ ROLE_MAP = {
 
 allowed_views = ROLE_MAP.get(user["role"], ["Customer Menu"])
 
+avatar_letter = user.get("full_name", "?")[0].upper()
+avatar_url = user.get("avatar_url", "")
+
+if avatar_url:
+    avatar_html = f'<img src="{avatar_url}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; margin:0 auto 8px; border:1px solid rgba(201,168,106,0.2);">'
+else:
+    avatar_html = f'<div style="width:40px; height:40px; border-radius:50%; background:#C9A86A; display:flex; align-items:center; justify-content:center; margin:0 auto 8px; box-shadow:0 4px 16px rgba(201,168,106,0.15);"><span style="color:#09090B; font-weight:700; font-size:0.85rem;">{avatar_letter}</span></div>'
+
 st.sidebar.markdown(f"""
 <div style="background: #1F1F23; border-radius: 16px; padding: 16px; margin: 0 0 16px 0;
     border: 1px solid rgba(255,255,255,0.06); text-align:center;">
-    <div style="width:40px; height:40px; border-radius:50%; background:#C9A86A;
-        display:flex; align-items:center; justify-content:center; margin:0 auto 8px;
-        box-shadow: 0 4px 16px rgba(201,168,106,0.15);">
-        <span style="color:#09090B; font-weight:700; font-size:0.85rem;">{user['full_name'][0]}</span>
-    </div>
+    {avatar_html}
     <div style="font-size:0.82rem; color:#A1A1AA; letter-spacing:0.01em; font-weight:500;">Welcome back</div>
     <div style="font-size:1rem; font-weight:700; color:#FAFAFA; margin:2px 0 8px;">{user['full_name']}</div>
     <span class="badge badge-gold">{user['role'].upper()}</span>
