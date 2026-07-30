@@ -82,9 +82,9 @@ def render_login_page():
                 </div>
             </div>
             <div class="auth-card-heading">
-                <h2>Welcome Back</h2>
+                <h2>RestoIntegrity OS</h2>
             </div>
-            <p class="auth-card-subtitle">Sign in to access your restaurant dashboard</p>
+            <p class="auth-card-subtitle">Enter your email to sign in or create an account</p>
             <div class="auth-card-divider"></div>
             """, unsafe_allow_html=True)
 
@@ -181,35 +181,51 @@ def render_login_page():
             email = st.session_state.get("auth_email", "")
             cooldown_remaining = st.session_state.pop("auth_cooldown", 0)
 
-            st.markdown(f"""
-            <div class="auth-flow-header">
-                <div class="icon-wrap" style="background:rgba(26,24,16,0.8);border:1px solid rgba(201,168,106,0.15);border-radius:50%;">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A86A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/>
-                    </svg>
-                </div>
-                <h3>Check your email</h3>
-                <p>We sent a verification code to</p>
-                <p style="color:#C9A86A;font-size:0.85rem;font-weight:600;margin:2px 0 0;">{email}</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            st.markdown("""
-            <div class="auth-sent-box">
-                <div class="auth-sent-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                </div>
-                <div class="auth-sent-check">&#10003; Code sent successfully</div>
-                <p class="auth-sent-hint">Expires in 5 minutes. Enter it below.</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            otp_value = st.session_state.get("auth_otp_value", "")
             smtp_configured = st.session_state.get("auth_smtp_configured", True)
-            if otp_value and not smtp_configured:
-                st.info(f"Your verification code: **{otp_value}** (email not configured)")
+            otp_value = st.session_state.get("auth_otp_value", "")
+
+            if not smtp_configured and otp_value:
+                st.markdown(f"""
+                <div class="auth-flow-header">
+                    <div class="icon-wrap" style="background:rgba(26,24,16,0.8);border:1px solid rgba(201,168,106,0.15);border-radius:50%;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A86A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/>
+                        </svg>
+                    </div>
+                    <h3>Verification Code</h3>
+                    <p>Use this code to sign in for <strong style="color:#C9A86A;">{email}</strong></p>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown(f"""
+                <div style="text-align:center;padding:20px;background:#1A1810;border:1px solid rgba(201,168,106,0.15);border-radius:16px;margin-bottom:16px;">
+                    <div style="font-size:2.5rem;font-weight:800;color:#FAFAFA;letter-spacing:0.3em;font-family:monospace;">{otp_value}</div>
+                    <p style="color:#71717A;font-size:0.75rem;margin:8px 0 0;">Expires in 5 minutes</p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div class="auth-flow-header">
+                    <div class="icon-wrap" style="background:rgba(26,24,16,0.8);border:1px solid rgba(201,168,106,0.15);border-radius:50%;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A86A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/>
+                        </svg>
+                    </div>
+                    <h3>Check your email</h3>
+                    <p>We sent a verification code to</p>
+                    <p style="color:#C9A86A;font-size:0.85rem;font-weight:600;margin:2px 0 0;">{email}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown("""
+                <div class="auth-sent-box">
+                    <div class="auth-sent-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </div>
+                    <div class="auth-sent-check">&#10003; Code sent successfully</div>
+                    <p class="auth-sent-hint">Expires in 5 minutes. Enter it below.</p>
+                </div>
+                """, unsafe_allow_html=True)
 
             if cooldown_remaining > 0:
                 st.warning(f"Please wait {cooldown_remaining} seconds before requesting a new code.")
