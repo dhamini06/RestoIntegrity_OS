@@ -72,189 +72,22 @@ def render_login_page():
     """, unsafe_allow_html=True)
 
     # ═══════════ SPLIT SCREEN via Streamlit native columns ══════════════
-    left_col, right_col = st.columns([6, 4])
+    left_col, right_col = st.columns([4, 6])
 
-    # ═══════════ LEFT HERO (60%) ═════════════════════════════════════════
+    # ═══════════ LEFT BRAND PANEL (40%) ═══════════════════════════════════
     with left_col:
-        st.markdown("""<div class="auth-hero"><div class="auth-hero-inner">""", unsafe_allow_html=True)
-
         st.markdown("""
-        <div class="auth-hero-section">
-            <div class="auth-logo-row">
-                <div class="auth-logo-icon"><span>R</span></div>
-                <div class="auth-logo-text">
-                    <div class="auth-logo-name">RestoIntegrity OS</div>
-                    <div class="auth-logo-sub">AI-Powered Restaurant Operations</div>
+        <div class="auth-brand">
+            <div class="auth-brand-logo-row">
+                <div class="auth-brand-icon"><span>R</span></div>
+                <div class="auth-brand-text">
+                    <div class="auth-brand-name">RestoIntegrity OS</div>
+                    <div class="auth-brand-sub">AI-Powered Restaurant Operations</div>
                 </div>
             </div>
+            <div class="auth-brand-tagline">Sign in to manage your restaurant operations.</div>
         </div>
         """, unsafe_allow_html=True)
-
-        st.markdown("""
-        <div class="auth-hero-section">
-            <div class="auth-heading">
-                <h1>Run Smarter.<br><span class="gold">Serve Better.</span></h1>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("""
-        <div class="auth-hero-section">
-            <p class="auth-desc">
-                The all-in-one AI platform for managing restaurant operations,
-                reducing wait times, predicting inventory, and improving customer experience.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("""
-        <div class="auth-hero-section">
-            <div class="auth-features">
-                <div class="auth-fcard">
-                    <div class="auth-fcard-icon" style="background:rgba(201,168,106,0.1);color:#C9A86A;">&#9889;</div>
-                    <div class="auth-fcard-title">AI Insights</div>
-                    <div class="auth-fcard-desc">Predict demand and optimize pricing</div>
-                </div>
-                <div class="auth-fcard">
-                    <div class="auth-fcard-icon" style="background:rgba(34,197,94,0.1);color:#22C55E;">&#127859;</div>
-                    <div class="auth-fcard-title">Live Kitchen</div>
-                    <div class="auth-fcard-desc">Real-time order tracking &amp; alerts</div>
-                </div>
-                <div class="auth-fcard">
-                    <div class="auth-fcard-icon" style="background:rgba(59,130,246,0.1);color:#3B82F6;">&#128203;</div>
-                    <div class="auth-fcard-title">Smart Queue</div>
-                    <div class="auth-fcard-desc">Intelligent waitlist management</div>
-                </div>
-                <div class="auth-fcard">
-                    <div class="auth-fcard-icon" style="background:rgba(168,85,247,0.1);color:#A855F7;">&#128200;</div>
-                    <div class="auth-fcard-title">Inventory AI</div>
-                    <div class="auth-fcard-desc">Auto-reorder &amp; waste reduction</div>
-                </div>
-                <div class="auth-fcard">
-                    <div class="auth-fcard-icon" style="background:rgba(245,158,11,0.1);color:#F59E0B;">&#128197;</div>
-                    <div class="auth-fcard-title">Reservations</div>
-                    <div class="auth-fcard-desc">Smart table &amp; guest management</div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("""
-        <div class="auth-hero-section">
-            <div class="auth-preview">
-                <div class="auth-preview-top">
-                    <div class="auth-preview-top-left">
-                        <span>Dashboard Overview</span>
-                    </div>
-                    <div class="auth-preview-live">
-                        <div class="auth-preview-live-dot"></div>
-                        LIVE
-                    </div>
-                </div>
-                <div class="auth-preview-grid">
-                    <div class="auth-preview-metric">
-                        <div class="auth-preview-metric-label">Today's Revenue</div>
-                        <div class="auth-preview-metric-value gold">$14,280</div>
-                        <div class="auth-preview-chart">
-                            <div class="auth-preview-chart-bar"></div>
-                            <div class="auth-preview-chart-bar"></div>
-                            <div class="auth-preview-chart-bar"></div>
-                            <div class="auth-preview-chart-bar"></div>
-                            <div class="auth-preview-chart-bar"></div>
-                            <div class="auth-preview-chart-bar"></div>
-                            <div class="auth-preview-chart-bar"></div>
-                        </div>
-                    </div>
-                    <div class="auth-preview-metric">
-                        <div class="auth-preview-metric-label">Orders Today</div>
-                        <div class="auth-preview-metric-value">342</div>
-                        <div class="auth-preview-chart">
-                            <div class="auth-preview-chart-bar" style="background:linear-gradient(to top,rgba(59,130,246,0.15),rgba(59,130,246,0.35));"></div>
-                            <div class="auth-preview-chart-bar" style="background:linear-gradient(to top,rgba(59,130,246,0.15),rgba(59,130,246,0.35));"></div>
-                            <div class="auth-preview-chart-bar" style="background:linear-gradient(to top,rgba(59,130,246,0.15),rgba(59,130,246,0.35));"></div>
-                            <div class="auth-preview-chart-bar" style="background:linear-gradient(to top,rgba(59,130,246,0.15),rgba(59,130,246,0.35));"></div>
-                            <div class="auth-preview-chart-bar" style="background:linear-gradient(to top,rgba(59,130,246,0.15),rgba(59,130,246,0.35));"></div>
-                            <div class="auth-preview-chart-bar" style="background:linear-gradient(to top,rgba(59,130,246,0.15),rgba(59,130,246,0.35));"></div>
-                            <div class="auth-preview-chart-bar" style="background:linear-gradient(to top,rgba(59,130,246,0.15),rgba(59,130,246,0.35));"></div>
-                        </div>
-                    </div>
-                    <div class="auth-preview-metric">
-                        <div class="auth-preview-metric-label">Reservations</div>
-                        <div class="auth-preview-metric-value purple">128</div>
-                        <svg width="100%" height="28" viewBox="0 0 180 28" style="margin-top:6px;">
-                            <path d="M0,22 Q15,8 30,18 T60,12 T90,20 T120,8 T150,16 T180,10" fill="none" stroke="#A855F7" stroke-width="2" stroke-opacity="0.4"/>
-                            <path d="M0,22 Q15,8 30,18 T60,12 T90,20 T120,8 T150,16 T180,10" fill="none" stroke="#A855F7" stroke-width="1.5" class="auth-preview-svg-line"/>
-                        </svg>
-                    </div>
-                    <div class="auth-preview-metric">
-                        <div class="auth-preview-metric-label">Kitchen Status</div>
-                        <div class="auth-preview-metric-value green">94%</div>
-                        <div style="display:flex;gap:4px;margin-top:6px;">
-                            <div style="flex:1;height:4px;border-radius:4px;background:rgba(255,255,255,0.06);overflow:hidden;">
-                                <div style="width:94%;height:100%;border-radius:4px;background:linear-gradient(90deg,#22C55E,#16A34A);"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="auth-preview-bottom">
-                    <div class="auth-preview-bottom-item">
-                        <div class="val gold">$52.3K</div>
-                        <div class="lbl">Weekly Revenue</div>
-                    </div>
-                    <div class="auth-preview-bottom-item">
-                        <div class="val">1,892</div>
-                        <div class="lbl">Weekly Orders</div>
-                    </div>
-                    <div class="auth-preview-bottom-item">
-                        <div class="val green">12.4m</div>
-                        <div class="lbl">Avg Prep Time</div>
-                    </div>
-                    <div class="auth-preview-bottom-item">
-                        <div class="val blue">4.8</div>
-                        <div class="lbl">Rating</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("""
-        <div class="auth-hero-section">
-            <div class="auth-stats">
-                <div class="auth-stat">
-                    <div class="auth-stat-value">99.9%</div>
-                    <div class="auth-stat-label">Uptime SLA</div>
-                </div>
-                <div class="auth-stat">
-                    <div class="auth-stat-value">10K<span style="color:#52525B;font-size:1rem;">+</span></div>
-                    <div class="auth-stat-label">Restaurants</div>
-                </div>
-                <div class="auth-stat">
-                    <div class="auth-stat-value gold">35%</div>
-                    <div class="auth-stat-label">Reduced Wait Time</div>
-                </div>
-                <div class="auth-stat">
-                    <div class="auth-stat-value">4.8<span style="color:#C9A86A;font-size:1rem;">&#9733;</span></div>
-                    <div class="auth-stat-label">Customer Rating</div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("""
-        <div class="auth-hero-section">
-            <div class="auth-social">
-                <span class="auth-social-label">Trusted by</span>
-                <span class="auth-social-name">Barbeque Nation</span>
-                <span class="auth-social-name">Mainland China</span>
-                <span class="auth-social-name">Haldiram</span>
-                <span class="auth-social-name">Cafe Coffee Day</span>
-                <span class="auth-social-name">Biryani By Kilo</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("""</div></div>""", unsafe_allow_html=True)
 
     # ═══════════ RIGHT AUTH PANEL (40%) ══════════════════════════════════
     with right_col:
