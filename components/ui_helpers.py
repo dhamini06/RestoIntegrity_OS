@@ -1,461 +1,315 @@
 import streamlit as st
 
+
 def inject_custom_css():
     st.markdown("""
-        <style>
-        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap');
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-        html, body, [data-testid="stAppViewContainer"] {
-            font-family: 'Manrope', sans-serif !important;
-            background: #09090B !important;
-            color: #FAFAFA !important;
-            letter-spacing: 0.01em;
-        }
+    * {
+        font-family: 'Inter', 'Manrope', sans-serif;
+    }
 
-        .main .block-container {
-            padding: 1.5rem 2rem !important;
-            max-width: 1400px !important;
-            margin: 0 auto !important;
-        }
+    html, body {
+        background-color: #09090B !important;
+        color: #FAFAFA !important;
+    }
 
-        [data-testid="stSidebar"] {
-            background: #111113 !important;
-            border-right: 1px solid rgba(255,255,255,0.06) !important;
-            min-width: 240px !important;
-        }
-        [data-testid="stSidebar"] .block-container {
-            padding: 1.5rem 1rem !important;
-        }
-        [data-testid="stSidebar"] hr {
-            border-color: rgba(255,255,255,0.06) !important;
-            margin: 16px 0 !important;
-        }
+    .main, .block-container {
+        max-width: 100% !important;
+        padding: 1rem 1.5rem !important;
+    }
 
-        [data-testid="stHeader"] { display: none !important; }
-        div[data-testid="stToolbar"] { display: none !important; }
-        footer { display: none !important; visibility: hidden !important; }
-        #MainMenu { display: none !important; visibility: hidden !important; }
+    div[data-testid="stSidebarNavItems"] { padding-top: 0.5rem; }
+    div[data-testid="stSidebarNav"]::before { display: none; }
 
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #09090B; }
-        ::-webkit-scrollbar-thumb { background: #27272A; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #3F3F46; }
+    section[data-testid="stSidebar"] > div:nth-child(1) {
+        background: #111113;
+        border-right: 1px solid rgba(255,255,255,0.04);
+    }
+    section[data-testid="stSidebar"] .sidebar-content {
+        background: #111113;
+    }
 
-        h1, h2, h3, h4, h5, h6 {
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 700 !important;
-            color: #FAFAFA !important;
-            letter-spacing: 0.02em !important;
-        }
+    div[data-testid="stMetric"] {
+        background: #1F1F23;
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 16px;
+        padding: 12px 16px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    div[data-testid="stMetric"] > div:first-child {
+        font-size: 0.75rem;
+        color: #71717A;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+        color: #FAFAFA;
+        font-weight: 800;
+        font-size: 1.8rem;
+    }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slideInLeft {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes scaleIn {
-            from { opacity: 0; transform: scale(0.96); }
-            to { opacity: 1; transform: scale(1); }
-        }
+    div.stButton > button[kind="primary"] {
+        background: #C9A86A !important;
+        color: #09090B !important;
+        border: none !important;
+        border-radius: 14px !important;
+        font-weight: 600 !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.875rem !important;
+        padding: 12px 20px !important;
+        box-shadow: 0 4px 20px rgba(201,168,106,0.2) !important;
+        transition: all 0.25s cubic-bezier(0.4,0,0.2,1) !important;
+    }
+    div.stButton > button[kind="primary"]:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 32px rgba(201,168,106,0.3) !important;
+    }
+    div.stButton > button[kind="secondary"] {
+        background: transparent !important;
+        color: #A1A1AA !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        border-radius: 14px !important;
+        font-weight: 600 !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.875rem !important;
+        padding: 12px 20px !important;
+        transition: all 0.25s ease !important;
+    }
+    div.stButton > button[kind="secondary"]:hover {
+        border-color: rgba(201,168,106,0.3) !important;
+        color: #FAFAFA !important;
+        background: rgba(255,255,255,0.03) !important;
+    }
+    div.stButton > button[kind="secondaryFormSubmit"] {
+        background: transparent !important;
+        color: #A1A1AA !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        border-radius: 14px !important;
+    }
 
-        .glass-card {
-            background: #18181B;
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 20px;
-            padding: 24px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.3);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            animation: fadeInUp 0.5s ease-out;
-        }
-        .glass-card:hover {
-            border-color: rgba(201, 168, 106, 0.15);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-            transform: translateY(-2px);
-        }
+    div.stTextInput > div > input {
+        background: rgba(255,255,255,0.04) !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        border-radius: 14px !important;
+        color: #FAFAFA !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.9rem !important;
+        padding: 12px 16px !important;
+        transition: all 0.25s ease !important;
+    }
+    div.stTextInput > div > input:focus {
+        border-color: #C9A86A !important;
+        box-shadow: 0 0 0 3px rgba(201,168,106,0.1) !important;
+    }
+    div.stTextInput > div > input::placeholder {
+        color: #52525B !important;
+    }
 
-        .glass-card-subtle {
-            background: #1F1F23;
-            border: 1px solid rgba(255,255,255,0.04);
-            border-radius: 18px;
-            padding: 20px;
-            transition: all 0.3s ease;
-        }
-        .glass-card-subtle:hover {
-            border-color: rgba(255,255,255,0.08);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-        }
+    div.stAlert {
+        background: rgba(201,168,106,0.06) !important;
+        border: 1px solid rgba(201,168,106,0.15) !important;
+        border-radius: 12px !important;
+        padding: 12px 16px !important;
+        color: #A1A1AA !important;
+    }
+    div.stAlert.stError {
+        background: rgba(239,68,68,0.08) !important;
+        border-color: rgba(239,68,68,0.2) !important;
+    }
+    div.stAlert.stSuccess {
+        background: rgba(34,197,94,0.08) !important;
+        border-color: rgba(34,197,94,0.2) !important;
+    }
+    div.stAlert.stWarning {
+        background: rgba(245,158,11,0.08) !important;
+        border-color: rgba(245,158,11,0.2) !important;
+    }
 
-        button {
-            border-radius: 14px !important;
-            font-weight: 600 !important;
-            font-family: 'Manrope', sans-serif !important;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            border: none !important;
-            letter-spacing: 0.01em !important;
-            font-size: 0.875rem !important;
-        }
-        button:active {
-            transform: scale(0.97) !important;
-        }
+    div.stSpinner {
+        border-color: #C9A86A !important;
+    }
 
-        button[kind="primary"] {
-            background: #C9A86A !important;
-            color: #09090B !important;
-            box-shadow: 0 4px 20px rgba(201, 168, 106, 0.2) !important;
-            padding: 10px 24px !important;
-        }
-        button[kind="primary"]:hover {
-            background: #D4B47A !important;
-            box-shadow: 0 6px 24px rgba(201, 168, 106, 0.3) !important;
-            transform: translateY(-1px) scale(1.01) !important;
-        }
+    .metric-value-gold {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #C9A86A;
+        letter-spacing: -0.02em;
+    }
+    .metric-value-green {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #22C55E;
+        letter-spacing: -0.02em;
+    }
+    .metric-value-blue {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #3B82F6;
+        letter-spacing: -0.02em;
+    }
+    .metric-value-purple {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #A855F7;
+        letter-spacing: -0.02em;
+    }
 
-        button[kind="secondary"] {
-            background: transparent !important;
-            color: #A1A1AA !important;
-            border: 1px solid rgba(255,255,255,0.1) !important;
-        }
-        button[kind="secondary"]:hover {
-            background: rgba(255,255,255,0.04) !important;
-            border-color: rgba(201, 168, 106, 0.3) !important;
-            color: #FAFAFA !important;
-        }
+    .glass-card {
+        background: rgba(31,31,35,0.6);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255,255,255,0.04);
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+    .glass-card:hover {
+        border-color: rgba(201,168,106,0.1);
+        box-shadow: 0 12px 48px rgba(0,0,0,0.3);
+    }
 
-        div[data-testid="stExpander"] {
-            background: #18181B !important;
-            border: 1px solid rgba(255,255,255,0.06) !important;
-            border-radius: 18px !important;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2) !important;
-            margin-bottom: 12px !important;
-        }
-        div[data-testid="stExpander"] summary {
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 600 !important;
-            color: #FAFAFA !important;
-            font-size: 0.9rem !important;
-        }
-        div[data-testid="stExpander"] summary:hover {
-            color: #C9A86A !important;
-        }
+    .badge-gold {
+        background: rgba(201,168,106,0.12);
+        color: #C9A86A;
+        padding: 2px 12px;
+        border-radius: 20px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+    .badge-green {
+        background: rgba(34,197,94,0.12);
+        color: #22C55E;
+        padding: 2px 12px;
+        border-radius: 20px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
 
-        .metric-value {
-            font-family: 'Manrope', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 4px 0;
-            color: #FAFAFA;
-            letter-spacing: -0.02em;
-        }
-        .metric-value-gold {
-            font-family: 'Manrope', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 4px 0;
-            color: #C9A86A;
-            letter-spacing: -0.02em;
-        }
-        .metric-value-emerald {
-            font-family: 'Manrope', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 4px 0;
-            color: #22C55E;
-            letter-spacing: -0.02em;
-        }
-        .metric-value-amber {
-            font-family: 'Manrope', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 4px 0;
-            color: #F59E0B;
-            letter-spacing: -0.02em;
-        }
-        .metric-value-blue {
-            font-family: 'Manrope', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 4px 0;
-            color: #3B82F6;
-            letter-spacing: -0.02em;
-        }
+    .divider {
+        height: 1px;
+        background: rgba(255,255,255,0.06);
+        margin: 16px 0;
+    }
 
-        .alert-card-high {
-            border-left: 3px solid #EF4444;
-            background: #1A1111;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 16px;
-            border: 1px solid rgba(239,68,68,0.1);
-            animation: slideInLeft 0.4s ease-out;
-            transition: all 0.3s ease;
-        }
-        .alert-card-high:hover {
-            background: #1F1212;
-            border-color: rgba(239,68,68,0.2);
-        }
-        .alert-card-medium {
-            border-left: 3px solid #F59E0B;
-            background: #1A1810;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 16px;
-            border: 1px solid rgba(245,158,11,0.1);
-            animation: slideInLeft 0.4s ease-out;
-            transition: all 0.3s ease;
-        }
-        .alert-card-medium:hover {
-            background: #1F1A10;
-            border-color: rgba(245,158,11,0.2);
-        }
-        .alert-card-low {
-            border-left: 3px solid #22C55E;
-            background: #111A11;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 16px;
-            border: 1px solid rgba(34,197,94,0.1);
-            animation: slideInLeft 0.4s ease-out;
-        }
+    div[data-testid="stExpander"] {
+        background: #1F1F23;
+        border: 1px solid rgba(255,255,255,0.04);
+        border-radius: 14px;
+        padding: 0;
+    }
+    div[data-testid="stExpander"] > div[data-testid="stExpanderToggleIcon"] {
+        color: #71717A;
+    }
 
-        input[type="text"], input[type="password"], input[type="number"], input[type="email"],
-        div[data-baseweb="select"], textarea, div[data-baseweb="input"] input {
-            background: #1F1F23 !important;
-            border: 1px solid rgba(255,255,255,0.08) !important;
-            border-radius: 14px !important;
-            color: #FAFAFA !important;
-            font-family: 'Manrope', sans-serif !important;
-            font-size: 0.875rem !important;
-            padding: 12px 16px !important;
-            transition: all 0.2s ease !important;
-        }
-        input[type="text"]:focus, input[type="password"]:focus, input[type="number"]:focus,
-        input[type="email"]:focus, div[data-baseweb="select"]:focus, textarea:focus {
-            border-color: #C9A86A !important;
-            box-shadow: 0 0 0 3px rgba(201, 168, 106, 0.1) !important;
-        }
+    div[data-testid="stRadio"] > div {
+        gap: 4px;
+    }
+    div[data-testid="stRadio"] label {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.04);
+        border-radius: 12px;
+        padding: 8px 16px;
+        font-size: 0.82rem;
+        font-weight: 500;
+        color: #A1A1AA;
+        transition: all 0.25s ease;
+        cursor: pointer;
+    }
+    div[data-testid="stRadio"] label:hover {
+        background: rgba(255,255,255,0.04);
+        border-color: rgba(201,168,106,0.1);
+        color: #FAFAFA;
+    }
+    div[data-testid="stRadio"] label[data-checked="true"] {
+        background: rgba(201,168,106,0.1);
+        border-color: rgba(201,168,106,0.2);
+        color: #C9A86A;
+    }
 
-        label, .stTextInput label, .stSelectbox label {
-            color: #A1A1AA !important;
-            font-family: 'Manrope', sans-serif !important;
-            font-size: 0.8rem !important;
-            font-weight: 500 !important;
-        }
+    div[data-testid="stDataFrame"] {
+        border: 1px solid rgba(255,255,255,0.04);
+        border-radius: 16px;
+        overflow: hidden;
+    }
 
-        div[role="radiogroup"] {
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 8px !important;
-            margin-top: 12px !important;
-        }
-        div[role="radiogroup"] label {
-            background: #18181B !important;
-            border: 1px solid rgba(255,255,255,0.06) !important;
-            border-radius: 14px !important;
-            padding: 12px 16px !important;
-            color: #A1A1AA !important;
-            cursor: pointer !important;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 500 !important;
-        }
-        div[role="radiogroup"] label:hover {
-            background: #1F1F23 !important;
-            border-color: rgba(201, 168, 106, 0.2) !important;
-            color: #FAFAFA !important;
-        }
-        div[role="radiogroup"] label:has(input[type="radio"]:checked) {
-            background: rgba(201, 168, 106, 0.06) !important;
-            border-color: #C9A86A !important;
-            color: #C9A86A !important;
-            box-shadow: 0 0 20px rgba(201, 168, 106, 0.08) !important;
-            font-weight: 600 !important;
-        }
-        div[role="radiogroup"] label input[type="radio"] { display: none !important; }
-        div[role="radiogroup"] label div[class*="st-"] { display: none !important; }
-        div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] {
-            margin-left: 0 !important; padding: 0 !important;
-        }
+    div[data-testid="stMarkdownContainer"] h1,
+    div[data-testid="stMarkdownContainer"] h2,
+    div[data-testid="stMarkdownContainer"] h3,
+    div[data-testid="stMarkdownContainer"] h4 {
+        color: #FAFAFA;
+    }
 
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-family: 'Manrope', sans-serif;
-        }
-        .badge-critical {
-            background: rgba(239,68,68,0.1);
-            color: #EF4444;
-            border: 1px solid rgba(239,68,68,0.2);
-        }
-        .badge-medium {
-            background: rgba(245,158,11,0.1);
-            color: #F59E0B;
-            border: 1px solid rgba(245,158,11,0.2);
-        }
-        .badge-low {
-            background: rgba(34,197,94,0.1);
-            color: #22C55E;
-            border: 1px solid rgba(34,197,94,0.2);
-        }
-        .badge-gold {
-            background: rgba(201,168,106,0.1);
-            color: #C9A86A;
-            border: 1px solid rgba(201,168,106,0.2);
-        }
-        .badge-blue {
-            background: rgba(59,130,246,0.1);
-            color: #3B82F6;
-            border: 1px solid rgba(59,130,246,0.2);
-        }
+    div[data-testid="column"] {
+        gap: 0 !important;
+    }
 
-        div[data-testid="stTabs"] {
-            margin-bottom: 24px;
-        }
-        div[data-testid="stTabs"] button {
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 500 !important;
-            font-size: 0.8rem !important;
-            border-radius: 10px !important;
-            padding: 8px 16px !important;
-            color: #71717A !important;
-            border: 1px solid transparent !important;
-            transition: all 0.2s ease !important;
-            letter-spacing: 0.01em !important;
-        }
-        div[data-testid="stTabs"] button:hover {
-            color: #A1A1AA !important;
-            border-color: rgba(255,255,255,0.06) !important;
-        }
-        div[data-testid="stTabs"] button[aria-selected="true"] {
-            background: rgba(201, 168, 106, 0.1) !important;
-            color: #C9A86A !important;
-            border-color: rgba(201, 168, 106, 0.2) !important;
-            font-weight: 600 !important;
-        }
-
-        .stale-badge {
-            background: rgba(239,68,68,0.1) !important;
-            color: #EF4444 !important;
-            border: 1px solid rgba(239,68,68,0.2) !important;
-            font-weight: 700 !important;
-            animation: pulseGlow 2s infinite;
-        }
-
-        @keyframes pulseGlow {
-            0%, 100% { box-shadow: 0 0 8px rgba(239,68,68,0.1); }
-            50% { box-shadow: 0 0 16px rgba(239,68,68,0.2); }
-        }
-
-        div.stDateInput > div {
-            background: #1F1F23 !important;
-            border: 1px solid rgba(255,255,255,0.08) !important;
-            border-radius: 14px !important;
-        }
-        div.stDateInput > div:focus-within {
-            border-color: #C9A86A !important;
-            box-shadow: 0 0 0 3px rgba(201, 168, 106, 0.1) !important;
-        }
-        div.stDateInput input {
-            color: #FAFAFA !important;
-        }
-
-        div[data-testid="stDataFrame"] {
-            border: 1px solid rgba(255,255,255,0.06) !important;
-            border-radius: 18px !important;
-            overflow: hidden !important;
-        }
-
-        section[data-testid="stSidebar"] hr {
-            margin: 16px 0 !important;
-        }
-
-        .gold-text {
-            color: #C9A86A;
-        }
-
-        .divider {
-            height: 1px;
-            background: rgba(255,255,255,0.06);
-            margin: 24px 0;
-        }
-
-        .stAlert {
-            background: #1F1F23 !important;
-            border: 1px solid rgba(255,255,255,0.06) !important;
-            border-radius: 14px !important;
-            color: #FAFAFA !important;
-        }
-        .stAlert > div:first-child {
-            color: #C9A86A !important;
-        }
-
-        div.stSelectbox div[data-baseweb="select"] {
-            background: #1F1F23 !important;
-            border: 1px solid rgba(255,255,255,0.08) !important;
-            border-radius: 14px !important;
-        }
-        div.stSelectbox div[data-baseweb="select"]:hover {
-            border-color: rgba(201, 168, 106, 0.3) !important;
-        }
-        div.stSelectbox ul {
-            background: #18181B !important;
-            border: 1px solid rgba(255,255,255,0.08) !important;
-            border-radius: 14px !important;
-        }
-        div.stSelectbox li {
-            color: #A1A1AA !important;
-        }
-        div.stSelectbox li:hover {
-            background: rgba(201, 168, 106, 0.08) !important;
-            color: #FAFAFA !important;
-        }
-
-        div.stSlider div[data-baseweb="slider"] div {
-            background: rgba(255,255,255,0.08) !important;
-        }
-        div.stSlider div[data-baseweb="slider"] div[role="slider"] {
-            background: #C9A86A !important;
-            border: none !important;
-            box-shadow: 0 2px 8px rgba(201, 168, 106, 0.3) !important;
-        }
-
-        section.main > div:first-child {
-            animation: fadeIn 0.4s ease-out;
-        }
-        </style>
+    @keyframes fadeInUp {
+        0% { opacity: 0; transform: translateY(20px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes scaleIn {
+        0% { opacity: 0; transform: scale(0.95); }
+        100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes countUp {
+        0% { opacity: 0; transform: translateY(10px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    </style>
     """, unsafe_allow_html=True)
+
 
 def inject_auth_css():
     st.markdown("""
     <style>
-    /* ── Base & Keyframes ─────────────────────────────────── */
+    /* ── Login mode: hide Streamlit chrome ──────────────────── */
+    .auth-mode-active header,
+    .auth-mode-active footer,
+    .auth-mode-active #stHeader,
+    .auth-mode-active .stAppToolbar,
+    .auth-mode-active .stAppDeployButton,
+    .auth-mode-active div[data-testid="stToolbar"],
+    .auth-mode-active div[data-testid="stDecoration"],
+    .auth-mode-active section[data-testid="stSidebar"] {
+        display: none !important;
+    }
+    .auth-mode-active .main {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+    }
+    .auth-mode-active .block-container {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    .auth-mode-active div[data-testid="stAppViewContainer"] {
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+    .auth-mode-active div[data-testid="stAppViewBlock"] {
+        padding: 0 !important;
+    }
+    .auth-mode-active .stApp > header {
+        display: none !important;
+    }
+
+    /* ── Keyframes ──────────────────────────────────────────── */
     @keyframes authFadeInUp {
         0% { opacity: 0; transform: translateY(24px); }
         100% { opacity: 1; transform: translateY(0); }
     }
-    @keyframes authFadeIn {
-        0% { opacity: 0; }
-        100% { opacity: 1; }
-    }
     @keyframes authScaleIn {
         0% { opacity: 0; transform: scale(0.94); }
         100% { opacity: 1; transform: scale(1); }
-    }
-    @keyframes authFloat {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-8px); }
     }
     @keyframes authFloatSlow {
         0%, 100% { transform: translate(0,0) rotate(0deg); }
@@ -465,10 +319,6 @@ def inject_auth_css():
     @keyframes authPulse {
         0%, 100% { opacity: 0.3; transform: scale(1); }
         50% { opacity: 0.6; transform: scale(1.08); }
-    }
-    @keyframes authBreath {
-        0%, 100% { opacity: 0.15; }
-        50% { opacity: 0.35; }
     }
     @keyframes authParticle {
         0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
@@ -487,14 +337,6 @@ def inject_auth_css():
         50% { transform: rotate(8deg) translateX(20%); }
         100% { transform: rotate(-8deg) translateX(-20%); }
     }
-    @keyframes authSlideUp {
-        0% { opacity: 0; transform: translateY(30px); }
-        100% { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes authCountIn {
-        0% { opacity: 0; transform: translateY(12px); }
-        100% { opacity: 1; transform: translateY(0); }
-    }
     @keyframes authGoldShimmer {
         0% { background-position: -200% center; }
         100% { background-position: 200% center; }
@@ -508,18 +350,7 @@ def inject_auth_css():
         100% { height: var(--h); }
     }
 
-    /* ── Split Container ──────────────────────────────────── */
-    .auth-split {
-        display: flex;
-        min-height: 100vh;
-        width: 100%;
-        position: fixed;
-        top: 0; left: 0;
-        z-index: 1;
-        background: transparent;
-    }
-
-    /* ── Background System ─────────────────────────────────── */
+    /* ── Background ─────────────────────────────────────────── */
     .auth-bg {
         position: fixed;
         inset: 0;
@@ -591,7 +422,6 @@ def inject_auth_css():
     .auth-bg-ray-1 { left: 10%; animation-delay: 0s; }
     .auth-bg-ray-2 { left: 30%; animation-delay: 3s; opacity: 0.5; }
     .auth-bg-ray-3 { left: 50%; animation-delay: 6s; opacity: 0.3; }
-
     .auth-particle {
         position: absolute;
         width: 3px; height: 3px;
@@ -612,29 +442,17 @@ def inject_auth_css():
     .auth-particle:nth-child(11) { left: 5%;  top: 30%; animation: authParticle 14s ease-in-out infinite 1s; width: 2px; height: 2px; }
     .auth-particle:nth-child(12) { left: 45%; top: 20%; animation: authParticle2 11s ease-in-out infinite 4s; background: #3B82F6; }
 
-    /* ── Left Hero (60%) ───────────────────────────────────── */
+    /* ── Hero (left column) ─────────────────────────────────── */
     .auth-hero {
-        flex: 0 0 60%;
-        position: relative;
-        z-index: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        padding: 48px 64px 48px 80px;
-        overflow-y: auto;
-        background: transparent;
+        padding: 48px 64px 48px 16px;
+        animation: authFadeInUp 0.6s ease-out;
     }
     .auth-hero-inner {
-        flex: 1;
         display: flex;
         flex-direction: column;
-        justify-content: center;
         max-width: 820px;
     }
-    .auth-hero-section {
-        animation: authFadeInUp 0.7s ease-out forwards;
-        opacity: 0;
-    }
+    .auth-hero-section { opacity: 0; animation: authFadeInUp 0.7s ease-out forwards; }
     .auth-hero-section:nth-child(1) { animation-delay: 0.05s; }
     .auth-hero-section:nth-child(2) { animation-delay: 0.15s; }
     .auth-hero-section:nth-child(3) { animation-delay: 0.25s; }
@@ -643,11 +461,9 @@ def inject_auth_css():
     .auth-hero-section:nth-child(6) { animation-delay: 0.55s; }
     .auth-hero-section:nth-child(7) { animation-delay: 0.65s; }
 
+    /* ── Logo ───────────────────────────────────────────────── */
     .auth-logo-row {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        margin-bottom: 12px;
+        display: flex; align-items: center; gap: 14px; margin-bottom: 12px;
     }
     .auth-logo-icon {
         width: 44px; height: 44px;
@@ -655,8 +471,7 @@ def inject_auth_css():
         background: linear-gradient(135deg, #C9A86A 0%, #B8954E 100%);
         display: flex; align-items: center; justify-content: center;
         box-shadow: 0 8px 32px rgba(201,168,106,0.2);
-        position: relative;
-        overflow: hidden;
+        position: relative; overflow: hidden;
     }
     .auth-logo-icon::after {
         content: ''; position: absolute; inset: 0;
@@ -664,22 +479,13 @@ def inject_auth_css():
         background-size: 200% 200%;
         animation: authGoldShimmer 4s ease-in-out infinite;
     }
-    .auth-logo-icon span {
-        color: #09090B; font-weight: 800; font-size: 1.35rem; position: relative; z-index: 1;
-    }
-    .auth-logo-text {
-        display: flex; flex-direction: column;
-    }
-    .auth-logo-name {
-        font-size: 1rem; font-weight: 700; color: #FAFAFA; letter-spacing: 0.01em;
-    }
-    .auth-logo-sub {
-        font-size: 0.72rem; color: #71717A; font-weight: 500; letter-spacing: 0.04em;
-    }
+    .auth-logo-icon span { color: #09090B; font-weight: 800; font-size: 1.35rem; position: relative; z-index: 1; }
+    .auth-logo-text { display: flex; flex-direction: column; }
+    .auth-logo-name { font-size: 1rem; font-weight: 700; color: #FAFAFA; letter-spacing: 0.01em; }
+    .auth-logo-sub { font-size: 0.72rem; color: #71717A; font-weight: 500; letter-spacing: 0.04em; }
 
-    .auth-heading {
-        margin: 32px 0 16px;
-    }
+    /* ── Heading ────────────────────────────────────────────── */
+    .auth-heading { margin: 32px 0 16px; }
     .auth-heading h1 {
         font-size: clamp(3rem, 4.2vw, 4.5rem);
         font-weight: 800;
@@ -696,7 +502,6 @@ def inject_auth_css():
         background-clip: text;
         animation: authGoldShimmer 6s linear infinite;
     }
-
     .auth-desc {
         font-size: clamp(0.9rem, 1.05vw, 1.1rem);
         color: #71717A;
@@ -705,17 +510,12 @@ def inject_auth_css():
         max-width: 580px;
     }
 
-    /* ── Feature Cards ─────────────────────────────────────── */
+    /* ── Feature Cards ──────────────────────────────────────── */
     .auth-features {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 14px;
-        margin-bottom: 44px;
+        display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 44px;
     }
     .auth-fcard {
-        flex: 1 1 140px;
-        min-width: 130px;
-        max-width: 180px;
+        flex: 1 1 140px; min-width: 130px; max-width: 180px;
         background: rgba(24,24,27,0.5);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
@@ -732,29 +532,15 @@ def inject_auth_css():
         box-shadow: 0 12px 48px rgba(0,0,0,0.4), 0 0 40px rgba(201,168,106,0.05);
     }
     .auth-fcard-icon {
-        width: 32px; height: 32px;
-        border-radius: 10px;
+        width: 32px; height: 32px; border-radius: 10px;
         display: flex; align-items: center; justify-content: center;
-        margin-bottom: 10px;
-        font-size: 0.85rem;
+        margin-bottom: 10px; font-size: 0.85rem;
     }
-    .auth-fcard-title {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #FAFAFA;
-        margin: 0 0 3px;
-    }
-    .auth-fcard-desc {
-        font-size: 0.68rem;
-        color: #52525B;
-        margin: 0;
-        line-height: 1.4;
-    }
-    .auth-fcard:hover .auth-fcard-desc {
-        color: #71717A;
-    }
+    .auth-fcard-title { font-size: 0.8rem; font-weight: 600; color: #FAFAFA; margin: 0 0 3px; }
+    .auth-fcard-desc { font-size: 0.68rem; color: #52525B; margin: 0; line-height: 1.4; }
+    .auth-fcard:hover .auth-fcard-desc { color: #71717A; }
 
-    /* ── Dashboard Preview ─────────────────────────────────── */
+    /* ── Dashboard Preview ──────────────────────────────────── */
     .auth-preview {
         background: rgba(18,18,22,0.7);
         backdrop-filter: blur(24px);
@@ -771,79 +557,44 @@ def inject_auth_css():
         box-shadow: 0 8px 40px rgba(0,0,0,0.3);
     }
     .auth-preview-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        display: flex; justify-content: space-between; align-items: center;
         margin-bottom: 18px;
     }
     .auth-preview-top-left {
-        display: flex;
-        align-items: center;
-        gap: 10px;
+        display: flex; align-items: center; gap: 10px;
     }
-    .auth-preview-top-left span {
-        font-size: 0.78rem;
-        color: #A1A1AA;
-        font-weight: 500;
-    }
+    .auth-preview-top-left span { font-size: 0.78rem; color: #A1A1AA; font-weight: 500; }
     .auth-preview-live {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        font-size: 0.62rem;
-        font-weight: 700;
-        color: #22C55E;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        padding: 3px 10px;
-        border-radius: 20px;
+        display: inline-flex; align-items: center; gap: 5px;
+        font-size: 0.62rem; font-weight: 700; color: #22C55E;
+        text-transform: uppercase; letter-spacing: 0.08em;
+        padding: 3px 10px; border-radius: 20px;
         background: rgba(34,197,94,0.08);
         border: 1px solid rgba(34,197,94,0.12);
     }
     .auth-preview-live-dot {
-        width: 5px; height: 5px;
-        border-radius: 50%;
+        width: 5px; height: 5px; border-radius: 50%;
         background: #22C55E;
         animation: authPulse 2s ease-in-out infinite;
     }
-    .auth-preview-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-    }
+    .auth-preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .auth-preview-metric {
         background: rgba(255,255,255,0.02);
-        border-radius: 14px;
-        padding: 14px 16px;
+        border-radius: 14px; padding: 14px 16px;
         border: 1px solid rgba(255,255,255,0.03);
     }
-    .auth-preview-metric-label {
-        font-size: 0.68rem;
-        color: #52525B;
-        font-weight: 500;
-        margin-bottom: 4px;
-    }
-    .auth-preview-metric-value {
-        font-size: 1.35rem;
-        font-weight: 800;
-        letter-spacing: -0.02em;
-        color: #FAFAFA;
-    }
+    .auth-preview-metric-label { font-size: 0.68rem; color: #52525B; font-weight: 500; margin-bottom: 4px; }
+    .auth-preview-metric-value { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; color: #FAFAFA; }
     .auth-preview-metric-value.gold { color: #C9A86A; }
     .auth-preview-metric-value.green { color: #22C55E; }
     .auth-preview-metric-value.purple { color: #A855F7; }
     .auth-preview-metric-value.blue { color: #3B82F6; }
     .auth-preview-chart {
-        display: flex;
-        align-items: flex-end;
-        gap: 4px;
-        height: 36px;
-        margin-top: 8px;
+        display: flex; align-items: flex-end; gap: 4px;
+        height: 36px; margin-top: 8px;
     }
     .auth-preview-chart-bar {
-        flex: 1;
-        border-radius: 3px 3px 0 0;
-        min-height: 4px;
+        flex: 1; border-radius: 3px 3px 0 0; min-height: 4px;
         background: linear-gradient(to top, rgba(201,168,106,0.15), rgba(201,168,106,0.35));
         animation: authBarGrow 1s ease-out forwards;
     }
@@ -855,123 +606,46 @@ def inject_auth_css():
     .auth-preview-chart-bar:nth-child(6) { --h: 80%; height: 80%; }
     .auth-preview-chart-bar:nth-child(7) { --h: 70%; height: 70%; }
     .auth-preview-bottom {
-        margin-top: 14px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-top: 12px;
+        margin-top: 14px; display: flex; justify-content: space-between;
+        align-items: center; padding-top: 12px;
         border-top: 1px solid rgba(255,255,255,0.03);
     }
-    .auth-preview-bottom-item {
-        text-align: center;
-    }
-    .auth-preview-bottom-item .val {
-        font-size: 0.82rem;
-        font-weight: 700;
-        color: #FAFAFA;
-    }
-    .auth-preview-bottom-item .lbl {
-        font-size: 0.6rem;
-        color: #52525B;
-        font-weight: 500;
-        margin-top: 2px;
-    }
-    .auth-preview-svg-line {
-        width: 100%;
-        height: 100%;
-    }
-    .auth-preview-svg-line path {
-        stroke-dasharray: 200;
-        stroke-dashoffset: 200;
-        animation: authDrawLine 2s ease-out 0.5s forwards;
-    }
-    @keyframes authDrawLine {
-        to { stroke-dashoffset: 0; }
-    }
+    .auth-preview-bottom-item { text-align: center; }
+    .auth-preview-bottom-item .val { font-size: 0.82rem; font-weight: 700; color: #FAFAFA; }
+    .auth-preview-bottom-item .val.gold { color: #C9A86A; }
+    .auth-preview-bottom-item .val.green { color: #22C55E; }
+    .auth-preview-bottom-item .val.blue { color: #3B82F6; }
+    .auth-preview-bottom-item .lbl { font-size: 0.6rem; color: #52525B; font-weight: 500; margin-top: 2px; }
 
-    /* ── Statistics Row ────────────────────────────────────── */
-    .auth-stats {
-        display: flex;
-        gap: 28px;
-        flex-wrap: wrap;
-        margin-bottom: 36px;
-    }
-    .auth-stat {
-        display: flex;
-        flex-direction: column;
-    }
-    .auth-stat-value {
-        font-size: 1.8rem;
-        font-weight: 800;
-        color: #FAFAFA;
-        letter-spacing: -0.02em;
-        line-height: 1;
-    }
+    /* ── Statistics ─────────────────────────────────────────── */
+    .auth-stats { display: flex; gap: 28px; flex-wrap: wrap; margin-bottom: 36px; }
+    .auth-stat { display: flex; flex-direction: column; }
+    .auth-stat-value { font-size: 1.8rem; font-weight: 800; color: #FAFAFA; letter-spacing: -0.02em; line-height: 1; }
     .auth-stat-value.gold { color: #C9A86A; }
-    .auth-stat-label {
-        font-size: 0.7rem;
-        color: #52525B;
-        font-weight: 500;
-        margin-top: 3px;
-    }
+    .auth-stat-label { font-size: 0.7rem; color: #52525B; font-weight: 500; margin-top: 3px; }
 
-    /* ── Social Proof ──────────────────────────────────────── */
+    /* ── Social Proof ───────────────────────────────────────── */
     .auth-social {
-        display: flex;
-        align-items: center;
-        gap: 28px;
-        flex-wrap: wrap;
-        padding-bottom: 8px;
+        display: flex; align-items: center; gap: 28px; flex-wrap: wrap; padding-bottom: 8px;
     }
-    .auth-social-label {
-        font-size: 0.65rem;
-        color: #3F3F46;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-    }
-    .auth-social-name {
-        font-size: 0.8rem;
-        color: #3F3F46;
-        font-weight: 500;
-        letter-spacing: 0.02em;
-        transition: color 0.25s ease;
-    }
-    .auth-social-name:hover {
-        color: #71717A;
-    }
+    .auth-social-label { font-size: 0.65rem; color: #3F3F46; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+    .auth-social-name { font-size: 0.8rem; color: #3F3F46; font-weight: 500; letter-spacing: 0.02em; transition: color 0.25s ease; }
+    .auth-social-name:hover { color: #71717A; }
 
-    /* ── Right Panel (40%) ──────────────────────────────────── */
-    .auth-panel {
-        flex: 0 0 40%;
-        position: relative;
-        z-index: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 48px 64px 48px 40px;
-        overflow-y: auto;
-        background: rgba(17,17,19,0.85);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
-    }
-    .auth-panel-inner {
-        width: 100%;
-        max-width: 460px;
-        animation: authScaleIn 0.6s ease-out 0.1s both;
-    }
-
-    /* ── Auth Card ─────────────────────────────────────────── */
-    .auth-card {
+    /* ── Auth Card (Right Panel) ────────────────────────────── */
+    .auth-mode-active div[data-testid="columns"] > div[data-testid="column"]:nth-child(2) {
         background: rgba(20,20,24,0.72);
         backdrop-filter: blur(22px);
         -webkit-backdrop-filter: blur(22px);
         border: 1px solid rgba(255,255,255,0.08);
         border-radius: 28px;
-        padding: 44px 40px 36px;
+        padding: 44px 40px 36px !important;
         box-shadow: 0 32px 96px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02) inset;
+        animation: authScaleIn 0.6s ease-out 0.1s both;
     }
-
+    .auth-mode-active div[data-testid="columns"] > div[data-testid="column"]:nth-child(2) > div {
+        width: 100%;
+    }
     .auth-card-logo {
         width: 56px; height: 56px;
         margin: 0 auto 18px;
@@ -993,72 +667,34 @@ def inject_auth_css():
         display: flex; align-items: center; justify-content: center;
         box-shadow: 0 0 30px rgba(201,168,106,0.2);
     }
-    .auth-card-logo-hex-inner span {
-        color: #09090B;
-        font-weight: 800;
-        font-size: 1rem;
-    }
-
-    .auth-card-heading {
-        text-align: center;
-        margin-bottom: 6px;
-    }
-    .auth-card-heading h2 {
-        font-size: 1.45rem;
-        font-weight: 700;
-        color: #FAFAFA;
-        margin: 0;
-        letter-spacing: -0.01em;
-    }
-    .auth-card-subtitle {
-        text-align: center;
-        font-size: 0.8rem;
-        color: #71717A;
-        margin: 0 0 20px;
-    }
+    .auth-card-logo-hex-inner span { color: #09090B; font-weight: 800; font-size: 1rem; }
+    .auth-card-heading { text-align: center; margin-bottom: 6px; }
+    .auth-card-heading h2 { font-size: 1.45rem; font-weight: 700; color: #FAFAFA; margin: 0; letter-spacing: -0.01em; }
+    .auth-card-subtitle { text-align: center; font-size: 0.8rem; color: #71717A; margin: 0 0 20px; }
     .auth-card-divider {
-        width: 36px;
-        height: 2.5px;
+        width: 36px; height: 2.5px;
         background: linear-gradient(90deg, #C9A86A, rgba(201,168,106,0.3));
-        border-radius: 4px;
-        margin: 0 auto 24px;
+        border-radius: 4px; margin: 0 auto 24px;
     }
-
     .auth-divider-or {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        margin: 16px 0;
+        display: flex; align-items: center; gap: 16px; margin: 16px 0;
     }
     .auth-divider-or-line {
-        flex: 1;
-        height: 1px;
+        flex: 1; height: 1px;
         background: linear-gradient(90deg, transparent, rgba(201,168,106,0.15), transparent);
     }
     .auth-divider-or-text {
-        font-size: 0.7rem;
-        color: #52525B;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
+        font-size: 0.7rem; color: #52525B; font-weight: 500;
+        text-transform: uppercase; letter-spacing: 0.06em;
     }
-
     .auth-google-btn {
         width: 100%;
-        padding: 13px 20px;
-        border-radius: 14px;
-        font-weight: 600;
-        font-family: 'Manrope', sans-serif;
-        font-size: 0.875rem;
-        letter-spacing: 0.01em;
-        background: #FAFAFA;
-        color: #09090B;
-        border: none;
+        padding: 13px 20px; border-radius: 14px;
+        font-weight: 600; font-family: inherit;
+        font-size: 0.875rem; letter-spacing: 0.01em;
+        background: #FAFAFA; color: #09090B; border: none;
         cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
+        display: flex; align-items: center; justify-content: center; gap: 10px;
         transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
         box-shadow: 0 4px 24px rgba(255,255,255,0.08);
     }
@@ -1066,67 +702,11 @@ def inject_auth_css():
         box-shadow: 0 8px 40px rgba(255,255,255,0.12);
         transform: translateY(-2px);
     }
-    .auth-google-btn:active { transform: scale(0.97); }
-
-    .auth-email-btn {
-        width: 100%;
-        padding: 13px 20px;
-        border-radius: 14px;
-        font-weight: 600;
-        font-family: 'Manrope', sans-serif;
-        font-size: 0.875rem;
-        letter-spacing: 0.01em;
-        background: transparent;
-        color: #C9A86A;
-        border: 1.5px solid rgba(201,168,106,0.3);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
-        box-shadow: none;
-    }
-    .auth-email-btn:hover {
-        border-color: #C9A86A;
-        box-shadow: 0 0 40px rgba(201,168,106,0.1), inset 0 0 20px rgba(201,168,106,0.03);
-        transform: translateY(-2px);
-        color: #D4B47A;
-    }
-    .auth-email-btn:active { transform: scale(0.97); }
-    .auth-email-btn .icon { font-size: 1rem; }
-
-    .auth-back-btn {
-        width: 100%;
-        padding: 13px 20px;
-        border-radius: 14px;
-        font-weight: 600;
-        font-family: 'Manrope', sans-serif;
-        font-size: 0.875rem;
-        background: transparent;
-        color: #A1A1AA;
-        border: 1px solid rgba(255,255,255,0.08);
-        cursor: pointer;
-        transition: all 0.25s ease;
-    }
-    .auth-back-btn:hover {
-        background: rgba(255,255,255,0.03);
-        border-color: rgba(201,168,106,0.2);
-        color: #FAFAFA;
-    }
-
-    /* ── Security Row ──────────────────────────────────────── */
     .auth-security {
-        display: flex;
-        gap: 8px;
-        margin: 22px 0 18px;
-        justify-content: center;
+        display: flex; gap: 8px; margin: 22px 0 18px; justify-content: center;
     }
     .auth-security-item {
-        flex: 1;
-        text-align: center;
-        padding: 10px 6px;
-        border-radius: 12px;
+        flex: 1; text-align: center; padding: 10px 6px; border-radius: 12px;
         background: rgba(255,255,255,0.02);
         border: 1px solid rgba(255,255,255,0.03);
         transition: all 0.25s ease;
@@ -1135,141 +715,65 @@ def inject_auth_css():
         background: rgba(255,255,255,0.04);
         border-color: rgba(255,255,255,0.06);
     }
-    .auth-security-icon {
-        font-size: 1rem;
-        margin-bottom: 4px;
-    }
-    .auth-security-title {
-        font-size: 0.62rem;
-        font-weight: 600;
-        color: #A1A1AA;
-        margin: 0;
-    }
-    .auth-security-desc {
-        font-size: 0.55rem;
-        color: #52525B;
-        margin: 1px 0 0;
-        line-height: 1.2;
-    }
+    .auth-security-icon { font-size: 1rem; margin-bottom: 4px; }
+    .auth-security-title { font-size: 0.62rem; font-weight: 600; color: #A1A1AA; margin: 0; }
+    .auth-security-desc { font-size: 0.55rem; color: #52525B; margin: 1px 0 0; line-height: 1.2; }
+    .auth-card-footer { text-align: center; margin-top: 6px; }
+    .auth-card-footer p { font-size: 0.68rem; color: #52525B; margin: 0; }
+    .auth-card-footer a { color: #C9A86A; text-decoration: none; font-weight: 500; }
+    .auth-card-footer a:hover { color: #E8D098; text-decoration: underline; }
+    .auth-enterprise { text-align: center; margin-top: 16px; }
+    .auth-enterprise span { font-size: 0.62rem; color: #3F3F46; font-weight: 500; letter-spacing: 0.02em; }
+    .auth-enterprise-sep { margin: 0 8px; color: #3F3F46; }
 
-    /* ── Card Footer ───────────────────────────────────────── */
-    .auth-card-footer {
-        text-align: center;
-        margin-top: 6px;
-    }
-    .auth-card-footer p {
-        font-size: 0.68rem;
-        color: #52525B;
-        margin: 0;
-    }
-    .auth-card-footer a {
-        color: #C9A86A;
-        text-decoration: none;
-        font-weight: 500;
-        transition: color 0.2s ease;
-    }
-    .auth-card-footer a:hover {
-        color: #E8D098;
-        text-decoration: underline;
-    }
-
-    .auth-enterprise {
-        text-align: center;
-        margin-top: 16px;
-    }
-    .auth-enterprise span {
-        font-size: 0.62rem;
-        color: #3F3F46;
-        font-weight: 500;
-        letter-spacing: 0.02em;
-    }
-    .auth-enterprise-sep {
-        margin: 0 8px;
-        color: #3F3F46;
-    }
-
-    /* ── Auth Flow Pages (email & otp) ──────────────────────── */
-    .auth-flow-header {
-        text-align: center;
-        margin-bottom: 20px;
-    }
+    /* ── Auth Flow Pages ────────────────────────────────────── */
+    .auth-flow-header { text-align: center; margin-bottom: 20px; }
     .auth-flow-header .icon-wrap {
-        width: 44px; height: 44px;
-        border-radius: 14px;
-        margin: 0 auto 12px;
-        display: flex; align-items: center; justify-content: center;
+        width: 44px; height: 44px; border-radius: 14px;
+        margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;
     }
-    .auth-flow-header h3 {
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: #FAFAFA;
-        margin: 0 0 2px;
-    }
-    .auth-flow-header p {
-        font-size: 0.78rem;
-        color: #71717A;
-        margin: 0;
-    }
-
-    .auth-flow-back-row {
-        display: flex; align-items: center; gap: 6px;
-        font-size: 0.78rem; color: #71717A;
-        cursor: pointer; padding: 6px 12px 6px 0;
-        border-radius: 8px; transition: all 0.2s ease;
-        width: fit-content;
-        margin-bottom: 12px;
-    }
-    .auth-flow-back-row:hover { color: #FAFAFA; }
-
+    .auth-flow-header h3 { font-size: 1.05rem; font-weight: 700; color: #FAFAFA; margin: 0 0 2px; }
+    .auth-flow-header p { font-size: 0.78rem; color: #71717A; margin: 0; }
     .auth-sent-box {
-        background: rgba(26,24,16,0.7);
-        border: 1px solid rgba(201,168,106,0.12);
-        border-radius: 16px;
-        padding: 18px;
-        text-align: center;
-        margin-bottom: 20px;
+        background: rgba(26,24,16,0.7); border: 1px solid rgba(201,168,106,0.12);
+        border-radius: 16px; padding: 18px; text-align: center; margin-bottom: 20px;
     }
     .auth-sent-icon {
-        width: 44px; height: 44px;
-        border-radius: 50%;
+        width: 44px; height: 44px; border-radius: 50%;
         background: rgba(201,168,106,0.08);
-        display: flex; align-items: center; justify-content: center;
-        margin: 0 auto 8px;
+        display: flex; align-items: center; justify-content: center; margin: 0 auto 8px;
     }
     .auth-sent-icon svg { stroke: #C9A86A; }
-    .auth-sent-check {
-        font-size: 0.78rem; color: #22C55E; font-weight: 500;
-        display: inline-flex; align-items: center; gap: 4px;
-    }
-    .auth-sent-hint {
-        font-size: 0.68rem; color: #52525B; margin: 4px 0 0;
-    }
+    .auth-sent-check { font-size: 0.78rem; color: #22C55E; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
+    .auth-sent-hint { font-size: 0.68rem; color: #52525B; margin: 4px 0 0; }
 
-    /* ── Responsive ────────────────────────────────────────── */
+    /* ── Responsive ─────────────────────────────────────────── */
     @media (max-width: 1200px) {
-        .auth-hero { padding: 40px 40px 40px 48px; }
-        .auth-panel { padding: 40px 40px 40px 24px; }
-        .auth-card { padding: 36px 32px 32px; }
+        .auth-hero { padding: 40px 40px 40px 16px; }
+        .auth-mode-active div[data-testid="columns"] > div[data-testid="column"]:nth-child(2) {
+            padding: 36px 32px 32px !important;
+        }
         .auth-preview-grid { gap: 12px; }
     }
     @media (max-width: 1024px) {
-        .auth-split { flex-direction: column; overflow-y: auto; position: relative; min-height: 100vh; }
-        .auth-bg { position: fixed; }
-        .auth-hero { flex: none; padding: 40px 32px 24px; min-height: auto; }
+        .auth-hero { padding: 40px 32px 24px; }
+        .auth-mode-active div[data-testid="columns"] > div[data-testid="column"]:nth-child(2) {
+            padding: 24px 32px 32px !important;
+        }
         .auth-hero-inner { max-width: 100%; }
         .auth-heading h1 { font-size: clamp(2.2rem, 6vw, 3.2rem); }
         .auth-features { gap: 10px; }
         .auth-fcard { flex: 1 1 120px; min-width: 110px; max-width: none; padding: 14px 12px; }
         .auth-preview { max-width: 100%; }
-        .auth-panel { flex: none; padding: 16px 32px 32px; }
-        .auth-panel-inner { max-width: 460px; margin: 0 auto; }
         .auth-stats { gap: 20px; }
         .auth-stat-value { font-size: 1.4rem; }
     }
     @media (max-width: 640px) {
         .auth-hero { padding: 28px 20px 16px; }
-        .auth-panel { padding: 12px 20px 28px; }
-        .auth-card { padding: 28px 22px 24px; border-radius: 22px; }
+        .auth-mode-active div[data-testid="columns"] > div[data-testid="column"]:nth-child(2) {
+            padding: 28px 22px 24px !important;
+            border-radius: 22px;
+        }
         .auth-logo-icon { width: 36px; height: 36px; }
         .auth-logo-icon span { font-size: 1.1rem; }
         .auth-heading { margin: 20px 0 12px; }
@@ -1292,6 +796,7 @@ def inject_auth_css():
     </style>
     """, unsafe_allow_html=True)
 
+
 def show_glass_card(title, content_html, icon="", color="gold"):
     st.markdown(f"""
         <div class="glass-card">
@@ -1304,6 +809,7 @@ def show_glass_card(title, content_html, icon="", color="gold"):
             </div>
         </div>
     """, unsafe_allow_html=True)
+
 
 def show_metric_card(label, value, icon="", color="gold"):
     val_class = f"metric-value-gold" if color == "gold" else f"metric-value-{color}"
