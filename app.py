@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import random
 import hashlib
 import sqlite3
 from database import get_db_connection, init_db, migrate_db
@@ -24,48 +25,31 @@ migrate_db()
 seed_db()
 inject_custom_css()
 
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def authenticate(email, password):
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) as cnt FROM users")
-        if cursor.fetchone()["cnt"] == 0:
-            conn.close()
-            init_db()
-            migrate_db()
-            seed_db()
-            conn = get_db_connection()
-            cursor = conn.cursor()
-        cursor.execute(
-            "SELECT id, username, role, full_name FROM users WHERE username = ? AND password_hash = ?",
-            (email, hash_password(password))
-        )
-        user = cursor.fetchone()
-        conn.close()
-        if user:
-            return {
-                "id": user["id"],
-                "username": user["username"],
-                "role": user["role"],
-                "full_name": user["full_name"],
-            }
-    except Exception:
-        st.error("System initializing... Please refresh and try again.")
-    return None
-
 def lookup_user(email):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT username, full_name FROM users WHERE username = ?", (email,))
+        cursor.execute("SELECT username, full_name, role FROM users WHERE username = ?", (email,))
         user = cursor.fetchone()
         conn.close()
         return dict(user) if user else None
     except Exception:
         return None
+
+def sign_in_user(email):
+    user_data = lookup_user(email)
+    if user_data:
+        st.session_state.user = {
+            "id": 0,
+            "username": user_data["username"],
+            "role": user_data["role"],
+            "full_name": user_data["full_name"],
+        }
+        return True
+    return False
+
+def generate_otp():
+    return str(random.randint(100000, 999999))
 
 def render_login_page():
     col1, col2, col3 = st.columns([1, 1.2, 1])
@@ -75,7 +59,7 @@ def render_login_page():
              box-shadow: 0 24px 80px rgba(0,0,0,0.5);
              border: 1px solid rgba(255,255,255,0.06);
              animation: fadeInUp 0.6s ease-out; margin-top: 40px;">
-            <div style="text-align:center; margin-bottom: 32px;">
+            <div style="text-align:center; margin-bottom: 28px;">
                 <div style="width:48px; height:48px; border-radius:14px; background:#C9A86A;
                     display:flex; align-items:center; justify-content:center; margin:0 auto 16px;
                     box-shadow: 0 8px 24px rgba(201,168,106,0.15);">
@@ -100,11 +84,19 @@ def render_login_page():
             </div>
             """, unsafe_allow_html=True)
 
-            if st.button("Sign In", key="google_continue", use_container_width=True):
-                st.session_state.login_page = "google_email"
+            if st.button("Continue with Email", key="auth_email_btn", use_container_width=True):
+                st.session_state.login_page = "email"
                 st.rerun()
 
-        elif page == "google_email":
+            st.markdown("""
+            <div style="text-align:center; margin-top:12px;">
+                <p style="color:#52525B; font-size:0.72rem; margin:0;">
+                    Secured with OTP verification
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        elif page == "email":
             st.markdown("""
             <div style="text-align:center; margin-bottom:24px;">
                 <div style="width:40px; height:40px; border-radius:10px; background:#1F1F23;
@@ -112,64 +104,83 @@ def render_login_page():
                     border:1px solid rgba(255,255,255,0.06);">
                     <span style="color:#A1A1AA; font-weight:600; font-size:0.9rem;">@</span>
                 </div>
-                <h3 style="color:#FAFAFA; margin:0 0 4px; font-family:Manrope, sans-serif; font-weight:600; font-size:1.1rem;">Sign in</h3>
-                <p style="color:#71717A; font-size:0.8rem; margin:0;">Enter your email to continue</p>
+                <h3 style="color:#FAFAFA; margin:0 0 4px; font-family:Manrope, sans-serif; font-weight:600; font-size:1.05rem;">Enter your email</h3>
+                <p style="color:#71717A; font-size:0.8rem; margin:0;">We'll send a verification code</p>
             </div>
             """, unsafe_allow_html=True)
 
-            google_email = st.text_input("Email address", placeholder="you@example.com", key="google_email_input", value=st.session_state.get("google_email_val", ""))
+            email = st.text_input("Email address", placeholder="you@example.com", key="auth_email_input", value=st.session_state.get("auth_email", ""))
             col_b1, col_b2 = st.columns(2)
             with col_b1:
-                if st.button("Back", key="google_back", use_container_width=True):
+                if st.button("Back", key="auth_email_back", use_container_width=True):
                     st.session_state.login_page = "main"
-                    st.session_state.pop("google_email_val", None)
+                    st.session_state.auth_email = ""
                     st.rerun()
             with col_b2:
-                if st.button("Next", key="google_next", type="primary", use_container_width=True):
-                    if google_email:
-                        user_data = lookup_user(google_email)
-                        if user_data:
-                            st.session_state.google_email_val = google_email
-                            st.session_state.google_user_data = user_data
-                            st.session_state.login_page = "google_password"
+                if st.button("Send Code", key="auth_email_next", type="primary", use_container_width=True):
+                    if email:
+                        if lookup_user(email):
+                            st.session_state.auth_email = email
+                            st.session_state.auth_otp = generate_otp()
+                            st.session_state.login_page = "otp"
                             st.rerun()
                         else:
                             st.error("No account found with this email.")
+                    else:
+                        st.error("Please enter your email.")
 
-        elif page == "google_password":
-            user_data = st.session_state.get("google_user_data", {})
-            initials = "".join(p[0] for p in user_data.get("full_name", "?").split()[:2]).upper()
+        elif page == "otp":
+            email = st.session_state.get("auth_email", "")
+            otp = st.session_state.get("auth_otp", "")
+            user_data = lookup_user(email)
+            initials = "".join(p[0] for p in user_data.get("full_name", "?").split()[:2]).upper() if user_data else "?"
 
             st.markdown(f"""
-            <div style="text-align:center; margin-bottom:24px;">
+            <div style="text-align:center; margin-bottom:20px;">
                 <div style="width:48px; height:48px; border-radius:50%; background:#1F1F23;
                     display:flex; align-items:center; justify-content:center; font-size:1rem;
-                    font-weight:700; color:#FAFAFA; margin:0 auto 12px;
+                    font-weight:700; color:#FAFAFA; margin:0 auto 8px;
                     border:1px solid rgba(201,168,106,0.2); letter-spacing:0.02em;">
                     {initials}
                 </div>
-                <div style="font-weight:600; color:#FAFAFA; font-size:1rem;">{user_data.get('full_name', '')}</div>
-                <div style="font-size:0.78rem; color:#71717A;">{user_data.get('username', '')}</div>
+                <div style="font-weight:600; color:#FAFAFA; font-size:0.95rem;">{user_data.get('full_name', '') if user_data else ''}</div>
+                <div style="font-size:0.78rem; color:#71717A;">{email}</div>
             </div>
             """, unsafe_allow_html=True)
 
-            google_pass = st.text_input("Password", type="password", placeholder="Enter your password", key="google_pass_input")
+            st.markdown(f"""
+            <div style="background: #1A1810; border: 1px solid rgba(201,168,106,0.15); border-radius: 14px; padding: 16px; margin-bottom: 20px; text-align:center;">
+                <div style="font-size:0.72rem; color:#C9A86A; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Verification Code</div>
+                <div style="font-size:2rem; font-weight:700; color:#FAFAFA; letter-spacing:0.3em; font-family:monospace;">{otp}</div>
+                <p style="font-size:0.72rem; color:#71717A; margin:6px 0 0;">A verification code has been sent to {email}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            user_otp = st.text_input("Enter verification code", placeholder="000000", key="auth_otp_input", max_chars=6)
+
             col_b1, col_b2 = st.columns(2)
             with col_b1:
-                if st.button("Back", key="google_pass_back", use_container_width=True):
-                    st.session_state.login_page = "google_email"
+                if st.button("Back", key="auth_otp_back", use_container_width=True):
+                    st.session_state.login_page = "email"
                     st.rerun()
             with col_b2:
-                if st.button("Sign In", key="google_signin", type="primary", use_container_width=True):
-                    user = authenticate(user_data.get("username", ""), google_pass)
-                    if user:
-                        st.session_state.user = user
-                        st.rerun()
+                if st.button("Verify & Sign In", key="auth_otp_verify", type="primary", use_container_width=True):
+                    if user_otp == otp:
+                        if sign_in_user(email):
+                            st.session_state.pop("auth_otp", None)
+                            st.session_state.pop("auth_email", None)
+                            st.rerun()
+                        else:
+                            st.error("Could not sign in. Please try again.")
                     else:
-                        st.error("Wrong password. Try again.")
+                        st.error("Invalid code. Please try again.")
+
+            if st.button("Resend code", key="auth_otp_resend", use_container_width=True):
+                st.session_state.auth_otp = generate_otp()
+                st.rerun()
 
         st.markdown("""
-        <div style="text-align:center; margin-top:24px;">
+        <div style="text-align:center; margin-top:20px;">
             <p style="font-size:0.72rem; color:#52525B; margin:0; letter-spacing:0.01em;">
                 By signing in, you agree to our Terms and Privacy Policy.
             </p>
