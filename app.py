@@ -72,7 +72,9 @@ def render_login_page():
     """, unsafe_allow_html=True)
 
     # ═══════════ CENTERED AUTH PANEL ═══════════════════════════════════════
-    if page == "main":
+    _, center_col, _ = st.columns([1, 1, 1])
+    with center_col:
+        if page == "main":
             st.markdown("""
             <div class="auth-card-logo">
                 <div class="auth-card-logo-hex">
@@ -134,7 +136,7 @@ def render_login_page():
             </div>
             """, unsafe_allow_html=True)
 
-    elif page == "email":
+        elif page == "email":
             st.markdown("""
             <div class="auth-flow-header">
                 <div class="icon-wrap" style="background:rgba(201,168,106,0.1);border-radius:14px;">
@@ -173,7 +175,7 @@ def render_login_page():
                     else:
                         st.error("Please enter your email.")
 
-    elif page == "otp_sent":
+        elif page == "otp_sent":
             email = st.session_state.get("auth_email", "")
             cooldown_remaining = st.session_state.pop("auth_cooldown", 0)
 

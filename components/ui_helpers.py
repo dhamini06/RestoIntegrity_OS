@@ -271,7 +271,6 @@ def inject_auth_css():
     st.markdown("""
     <style>
     /* ── Hide Streamlit chrome during login ──────────────────── */
-    /* This CSS is only in the DOM when auth page renders */
     header, footer, #stHeader, .stAppToolbar, .stAppDeployButton,
     div[data-testid="stToolbar"], div[data-testid="stDecoration"],
     section[data-testid="stSidebar"] {
@@ -283,13 +282,26 @@ def inject_auth_css():
         padding: 0 !important;
         margin: 0 !important;
     }
-    .block-container {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+
+    /* ── Center auth card vertically & horizontally ──────────── */
+    div[data-testid="stHorizontalBlock"] {
         min-height: 100vh !important;
+        align-items: center !important;
+        gap: 0 !important;
     }
-    .stApp > header { display: none !important; }
+    div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+        padding: 0 !important;
+    }
+    div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2) > div[data-testid="stVerticalBlock"] {
+        background: rgba(20,20,24,0.72);
+        backdrop-filter: blur(22px);
+        -webkit-backdrop-filter: blur(22px);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 28px;
+        padding: 44px 40px 36px !important;
+        box-shadow: 0 32px 96px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02) inset;
+        animation: authScaleIn 0.6s ease-out 0.1s both;
+    }
 
     /* ── Keyframes ──────────────────────────────────────────── */
     @keyframes authFadeInUp {
@@ -335,27 +347,11 @@ def inject_auth_css():
         50% { box-shadow: 0 0 40px rgba(201,168,106,0.3); }
     }
 
-    /* ── Auth Card Width ────────────────────────────────────── */
-    .block-container > div[data-testid="stVerticalBlock"] {
-        width: 100%;
-        max-width: 440px;
-        padding: 32px 16px;
-    }
-    .block-container > div[data-testid="stVerticalBlock"] > div {
-        background: rgba(20,20,24,0.72);
-        backdrop-filter: blur(22px);
-        -webkit-backdrop-filter: blur(22px);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 28px;
-        padding: 44px 40px 36px;
-        box-shadow: 0 32px 96px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02) inset;
-        animation: authScaleIn 0.6s ease-out 0.1s both;
-    }
     /* ── Background ─────────────────────────────────────────── */
     .auth-bg {
         position: fixed;
         inset: 0;
-        z-index: 0;
+        z-index: -1;
         overflow: hidden;
         background: #09090B;
     }
@@ -547,11 +543,12 @@ def inject_auth_css():
 
     /* ── Responsive ─────────────────────────────────────────── */
     @media (max-width: 640px) {
-        .block-container > div[data-testid="stVerticalBlock"] {
-            padding: 16px 12px;
+        div[data-testid="stHorizontalBlock"] {
+            min-height: auto !important;
+            padding: 24px 12px;
         }
-        .block-container > div[data-testid="stVerticalBlock"] > div {
-            padding: 28px 22px 24px;
+        div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2) > div[data-testid="stVerticalBlock"] {
+            padding: 28px 22px 24px !important;
             border-radius: 22px;
         }
         .auth-security { flex-direction: column; gap: 6px; }
