@@ -13,7 +13,7 @@ Built for **VibeAthon 6.0 (2K26) Hackathon**
 | Level | User Story | Status |
 |-------|-----------|--------|
 | **Bronze** | US 1 — Modern intuitive interface for customers & management | ✅ |
-| **Silver** | US 2 — Secure authentication (Email OTP + Google OAuth) + Role-based access | ✅ |
+| **Silver** | US 2 — Secure authentication (Email OTP + Google OAuth) + Role-based access | ⏳ **Pending** |
 | **Silver** | US 3 — Digitized workflows: Digital Menu, Live Availability, Smart Reservations, Order Management, Queue Management, Billing, Notifications | ✅ |
 | **Gold** | US 4 — Management Dashboard: Orders, Tables, Inventory, Staff, Customers, Sales, Analytics | ✅ |
 | **Platinum** | US 5 — Intelligent features: Personalized Recommendations, Inventory Prediction, Demand Forecasting, Smart Notifications, Operational Insights, AI Assistant | ✅ |
@@ -64,32 +64,9 @@ Built for **VibeAthon 6.0 (2K26) Hackathon**
 
 ---
 
-## Authentication System
+## Access
 
-Production-grade authentication comparable to ChatGPT, Notion, or Slack:
-
-### Login Options
-- **Continue with Google** — Full OAuth 2.0 flow (name, email, avatar, auto-provisioning)
-- **Continue with Email** — OTP-based email verification
-
-### Security Architecture
-| Layer | Implementation |
-|-------|---------------|
-| **Password hashing** | bcrypt (12 salt rounds) |
-| **OTP security** | Cryptographically secure generation (`secrets.choice`), SHA-256 hashed before storage |
-| **OTP expiry** | 5-minute time limit, enforced server-side |
-| **Rate limiting** | 5 max verification attempts, 30-second resend cooldown |
-| **Session management** | Server-side tokens, 12h absolute expiry, 30min inactivity timeout |
-| **Audit logging** | Every auth event recorded: login, logout, OTP generated, OTP verified, session expiry |
-
-### Modules
-| Module | File | Purpose |
-|--------|------|---------|
-| Security | `security.py` | bcrypt hashing, OTP generation/validation, token generation |
-| Email Service | `email_service.py` | SMTP email with branded HTML template (Gmail/Resend) |
-| OAuth | `oauth.py` | Google OAuth 2.0 flow (auth URL, code exchange, user info) |
-| Session Manager | `session_manager.py` | Session CRUD, activity tracking, expiration, cleanup |
-| Authentication | `authentication.py` | Orchestration: request OTP, verify OTP, Google login, logout, audit |
+Authentication has been removed for evaluation. The app loads directly as an **admin** user with full access to all views.
 
 ---
 
@@ -102,8 +79,7 @@ Production-grade authentication comparable to ChatGPT, Notion, or Slack:
 | **Database** | SQLite with WAL mode |
 | **AI** | Google Gemini API (`gemini-2.5-flash`) |
 | **Charts** | Plotly (Dark Theme) |
-| **Auth** | Email OTP (SMTP) + Google OAuth 2.0 |
-| **Security** | bcrypt, SHA-256, server-side sessions |
+| **Access** | Role-based (pre-seeded demo accounts, no login required) |
 | **Deployment** | Streamlit Community Cloud |
 | **Version Control** | GitHub |
 
@@ -111,26 +87,13 @@ Production-grade authentication comparable to ChatGPT, Notion, or Slack:
 
 ## Configuration
 
-Create `.streamlit/secrets.toml` with your credentials:
+The only optional config is the Gemini API key for AI features (the app works fully without it):
+
+Create `.streamlit/secrets.toml`:
 
 ```toml
-# Google OAuth
-GOOGLE_OAUTH_CLIENT_ID = "your-client-id.apps.googleusercontent.com"
-GOOGLE_OAUTH_CLIENT_SECRET = "your-client-secret"
-GOOGLE_OAUTH_REDIRECT_URI = "https://your-app.streamlit.app/"
-
-# SMTP (Gmail or Resend)
-SMTP_HOST = "smtp.gmail.com"
-SMTP_PORT = 587
-SMTP_USER = "your-email@gmail.com"
-SMTP_PASS = "your-app-password"
-SMTP_FROM_EMAIL = "your-email@gmail.com"
-
-# Gemini AI (Optional — app works without it)
 GEMINI_API_KEY = "your-gemini-api-key"
 ```
-
-The app works fully without any secrets configured. Email auth falls back gracefully, Google button hides when unconfigured, AI features use offline fallbacks.
 
 ---
 
