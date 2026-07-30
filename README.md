@@ -162,7 +162,6 @@ streamlit run app.py
 | Email | Password | Role | Access |
 |-------|----------|------|--------|
 | admin@resto.com | admin123 | **admin** | Full access — all views |
-| dhamini467@gmail.com | Dhamini@123 | **admin** | Full access — all views |
 | alice@resto.com | alice123 | **staff** | Waiter — Reservations, Queue, Customer Menu, Kitchen View |
 | bob@resto.com | bob123 | **staff** | Waiter — Reservations, Queue, Customer Menu, Kitchen View |
 | charlie@resto.com | charlie123 | **staff** | Waiter — Reservations, Queue, Customer Menu, Kitchen View |
