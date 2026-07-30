@@ -541,6 +541,15 @@ def inject_auth_css():
     .auth-sent-check { font-size: 0.78rem; color: #22C55E; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
     .auth-sent-hint { font-size: 0.68rem; color: #52525B; margin: 4px 0 0; }
 
+    /* ── Tighten OTP page spacing ──────────────────────────── */
+    div[data-testid="stTextInput"] {
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    div[data-testid="column"]:nth-child(2) div[data-testid="stHorizontalBlock"] {
+        margin-top: -8px !important;
+    }
+
     /* ── Responsive ─────────────────────────────────────────── */
     @media (max-width: 640px) {
         div[data-testid="stHorizontalBlock"] {
