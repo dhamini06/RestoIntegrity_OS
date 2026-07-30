@@ -163,6 +163,8 @@ def render_login_page():
                             st.session_state.auth_email = email
                             st.session_state.auth_otp_request_id = result["otp_request_id"]
                             st.session_state.auth_email_sent_at = datetime.now().isoformat()
+                            st.session_state.auth_otp_value = result.get("otp", "")
+                            st.session_state.auth_smtp_configured = result.get("smtp_configured", True)
                             st.session_state.login_page = "otp_sent"
                             st.rerun()
                         else:
@@ -203,6 +205,11 @@ def render_login_page():
                 <p class="auth-sent-hint">Expires in 5 minutes. Enter it below.</p>
             </div>
             """, unsafe_allow_html=True)
+
+            otp_value = st.session_state.get("auth_otp_value", "")
+            smtp_configured = st.session_state.get("auth_smtp_configured", True)
+            if otp_value and not smtp_configured:
+                st.info(f"Your verification code: **{otp_value}** (email not configured)")
 
             if cooldown_remaining > 0:
                 st.warning(f"Please wait {cooldown_remaining} seconds before requesting a new code.")

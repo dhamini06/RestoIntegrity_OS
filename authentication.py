@@ -149,9 +149,11 @@ def request_otp(email: str) -> dict:
     conn.close()
     smtp_ok = send_otp_email(email, otp, OTP_EXPIRY_MINUTES)
     if not smtp_ok:
-        _audit_log(email, "otp_generated", "warning", user["id"], "SMTP not configured - OTP would be sent via email")
+        _audit_log(email, "otp_generated", "warning", user["id"], "SMTP not configured - showing OTP in UI")
+        _audit_log(email, "otp_generated", "success", user["id"], f"OTP request #{otp_request_id}")
+        return {"success": True, "otp_request_id": otp_request_id, "otp": otp, "smtp_configured": False}
     _audit_log(email, "otp_generated", "success", user["id"], f"OTP request #{otp_request_id}")
-    return {"success": True, "otp_request_id": otp_request_id}
+    return {"success": True, "otp_request_id": otp_request_id, "smtp_configured": True}
 
 def verify_otp_and_login(email: str, otp: str) -> dict:
     email = sanitize_email(email)
